@@ -61,13 +61,6 @@ hr.small {
   .main-content {
     padding-top: 130px;
   }
-  # below are added
-  .table-responsive {
-    width: 100%;
-    margin-bottom: 13.5px;
-    overflow-y: hidden;
-    -ms-overflow-style: -ms-autohiding-scrollbar;
-  }
 }
 
 
@@ -649,8 +642,8 @@ footer .theme-by {
 }
 
 
-/* --- Tables --- */
 
+/* --- Tables --- */
 table {
   padding: 0;
 }
@@ -689,6 +682,17 @@ table tr th :last-child,
 table tr td :last-child {
   margin-bottom: 0;
 }
+
+# below are added
+@media only screen and (min-width: 768px) {
+  .table-responsive {
+    width: 100%;
+    margin-bottom: 13.5px;
+    overflow-y: hidden;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+  }
+}
+
 
 /* --- Code blocks --- */
 
