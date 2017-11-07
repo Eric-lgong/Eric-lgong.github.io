@@ -698,7 +698,7 @@ pre.highlight, .highlight > pre, td.code pre {
 }
 code table, code table td, code table th, code table tbody, code table tr,
 td.gutter pre {
-  padding: 2;
+  padding: 10;
   border: none;
   background-color: #fff;
 }
@@ -712,7 +712,7 @@ td.code pre {
   border-radius: 0;
 }
 td.gutter {
-  padding-top: 1px;
+  padding-top: 0px;
 }
 
 /* --- Social media sharing section --- */
