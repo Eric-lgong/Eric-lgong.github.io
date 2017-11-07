@@ -1,0 +1,4816 @@
+
+# Introduciton
+
+The purpose of this project is to build a classification model to predict whether a consumer's complain would get timely response or not. If the Consumer Financial Protection Bureau (CFPB) could have the insight that which complaint may not be receiving responses in time from a company, they may conduct extra measures to accelerate the process. <br>
+We will use the Financial Product Consumer Complaint Data in this project. The dataset can be downloaded from https://data.consumerfinance.gov/api/views/s6ew-h6mp/rows.csv?accessType=DOWNLOAD. A description of each variable in the dataset can be found from: https://cfpb.github.io/api/ccdb/fields.html. <br>
+<br>
+Author: eric-lgong
+
+# Import Python Packages
+
+
+```python
+%matplotlib inline
+%precision 2
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
+import warnings
+warnings.filterwarnings('ignore')
+from datetime import datetime
+import time
+import timeit
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+import itertools
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
+```
+
+# Load the data
+
+
+```python
+df = pd.read_csv('Consumer_Complaints.csv')
+df.head(3)
+```
+
+
+
+
+<div>
+<style>
+    .dataframe thead tr:only-child th {
+        text-align: right;
+    }
+
+    .dataframe thead th {
+        text-align: left;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Date received</th>
+      <th>Product</th>
+      <th>Sub-product</th>
+      <th>Issue</th>
+      <th>Sub-issue</th>
+      <th>Consumer complaint narrative</th>
+      <th>Company public response</th>
+      <th>Company</th>
+      <th>State</th>
+      <th>ZIP code</th>
+      <th>Tags</th>
+      <th>Consumer consent provided?</th>
+      <th>Submitted via</th>
+      <th>Date sent to company</th>
+      <th>Company response to consumer</th>
+      <th>Timely response?</th>
+      <th>Consumer disputed?</th>
+      <th>Complaint ID</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>03/12/2014</td>
+      <td>Mortgage</td>
+      <td>Other mortgage</td>
+      <td>Loan modification,collection,foreclosure</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>M&amp;T BANK CORPORATION</td>
+      <td>MI</td>
+      <td>48382</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>Referral</td>
+      <td>03/17/2014</td>
+      <td>Closed with explanation</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>759217</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>10/01/2016</td>
+      <td>Credit reporting</td>
+      <td>NaN</td>
+      <td>Incorrect information on credit report</td>
+      <td>Account status</td>
+      <td>I have outdated information on my credit repor...</td>
+      <td>Company has responded to the consumer and the ...</td>
+      <td>TRANSUNION INTERMEDIATE HOLDINGS, INC.</td>
+      <td>AL</td>
+      <td>352XX</td>
+      <td>NaN</td>
+      <td>Consent provided</td>
+      <td>Web</td>
+      <td>10/05/2016</td>
+      <td>Closed with explanation</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>2141773</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>10/17/2016</td>
+      <td>Consumer Loan</td>
+      <td>Vehicle loan</td>
+      <td>Managing the loan or lease</td>
+      <td>NaN</td>
+      <td>I purchased a new car on XXXX XXXX. The car de...</td>
+      <td>NaN</td>
+      <td>CITIZENS FINANCIAL GROUP, INC.</td>
+      <td>PA</td>
+      <td>177XX</td>
+      <td>Older American</td>
+      <td>Consent provided</td>
+      <td>Web</td>
+      <td>10/20/2016</td>
+      <td>Closed with explanation</td>
+      <td>Yes</td>
+      <td>No</td>
+      <td>2163100</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+# df.tail(3)
+```
+
+# Explore the entire dataset
+
+
+```python
+df.info()
+```
+
+    <class 'pandas.core.frame.DataFrame'>
+    RangeIndex: 871873 entries, 0 to 871872
+    Data columns (total 18 columns):
+    Date received                   871873 non-null object
+    Product                         871873 non-null object
+    Sub-product                     636713 non-null object
+    Issue                           871873 non-null object
+    Sub-issue                       399699 non-null object
+    Consumer complaint narrative    183903 non-null object
+    Company public response         242343 non-null object
+    Company                         871873 non-null object
+    State                           860657 non-null object
+    ZIP code                        860608 non-null object
+    Tags                            121641 non-null object
+    Consumer consent provided?      343683 non-null object
+    Submitted via                   871873 non-null object
+    Date sent to company            871873 non-null object
+    Company response to consumer    871873 non-null object
+    Timely response?                871873 non-null object
+    Consumer disputed?              768554 non-null object
+    Complaint ID                    871873 non-null int64
+    dtypes: int64(1), object(17)
+    memory usage: 119.7+ MB
+    
+
+(1) There are **871873** records, **18** columns. <br>
+(2) The **number of non-null values** for each column is also shown. <br>
+(3) Feature **type** is also displayed.
+
+
+```python
+def vars_to_drop(df, vars):
+    '''
+    Drop a list of columes from the DataFrame.
+    vars: a list of column names;
+    df: the targeting DataFrame.
+    '''
+    shape1 = df.shape
+    df.drop(vars, axis=1, inplace=True)
+    shape2 = df.shape
+    print("Data shape before/after deleting: {}/{}.".format(shape1, shape2))
+    return df
+```
+
+
+```python
+vars = ['Consumer consent provided?', 'Company response to consumer', 'Consumer disputed?', 'Complaint ID']
+df = vars_to_drop(df, vars)
+```
+
+    Data shape before/after deleting: (871873, 18)/(871873, 14).
+    
+
+
+```python
+# Converte 'Date received' and 'Date sent to company' to datetime format:
+def conv_var_type():
+    df['Date received'] = pd.to_datetime(df['Date received'])
+    df['Date sent to company'] = pd.to_datetime(df['Date sent to company'])
+```
+
+
+```python
+# timeit.timeit(conv_var_type, number=1)                                    
+```
+
+![Better_code_1.PNG](attachment:Better_code_1.PNG)
+
+
+```python
+# df.info()
+```
+
+
+```python
+# df.to_csv('temp_data1.csv', index=False, encoding='utf-8')        
+```
+
+# Examine each feature
+
+
+```python
+df = pd.read_csv('temp_data1.csv', encoding='utf-8')
+df.shape
+```
+
+
+
+
+    (871873, 15)
+
+
+
+
+```python
+timeit.timeit(conv_var_type, number=1)
+```
+
+
+
+
+    0.79
+
+
+
+
+```python
+df.columns                                                                  
+```
+
+
+
+
+    Index(['Date received', 'Product', 'Sub-product', 'Issue', 'Sub-issue',
+           'Consumer complaint narrative', 'Company public response', 'Company',
+           'State', 'ZIP code', 'Tags', 'Submitted via', 'Date sent to company',
+           'Timely response?', 'Complaint ID'],
+          dtype='object')
+
+
+
+
+```python
+# create a template to check missing values
+def check_var_missing_pct(df, var):
+    missing_pct = df[var].isnull().sum()/df.shape[0]
+    print("{:,.1%} of values are missing.".format(missing_pct))
+```
+
+
+```python
+# create a pie plot template
+def pie(df, var, width=6, height=4):
+    check_var_missing_pct(df, var)
+    
+    check_col = df[var].value_counts(dropna=False)                            # include 'null' values 
+    labels = check_col.index.values                                           # get the row labels
+    counts = check_col.values                                                 # get the counts for each value/label
+    
+    if len(check_col)>10:
+        print('Variable levels: {}'.format(len(check_col)))
+        
+    if len(check_col)>50:
+        return
+        
+    plt.figure(figsize=(width, height))
+    plt.pie(counts, labels=labels, shadow=True, autopct='%1.1f%%') 
+    plt.axis('equal')
+    plt.title('Variable: '+var)
+    plt.show()
+```
+
+## Check the dependent variable *'Timely response?'*.
+
+
+```python
+pie(df, 'Timely response?')
+```
+
+    0.0% of values are missing.
+    
+
+
+![png](output_23_1.png)
+
+
+
+```python
+df.rename(columns={'Timely response?':'y'}, inplace=True)
+```
+
+Encode dependent variable **'y'**:
+
+
+```python
+y_mapper = {label:idx for idx,label in enumerate(np.unique(df['y']))}
+df['y'].replace(y_mapper, inplace=True)
+```
+
+## Check categorical independent variables.
+
+### Check independent variable - *'Product'*.
+
+
+```python
+pie(df, 'Product')
+```
+
+    0.0% of values are missing.
+    Variable levels: 18
+    
+
+
+![png](output_29_1.png)
+
+
+
+```python
+# group low-occurrence values together into a new group called 'Others'
+def combine_levels(df, var, thre_val, combined_label):
+    var_freq = df[var].value_counts(dropna=False)
+    var_pct = var_freq/var_freq.sum()
+    combined_classes = var_pct.index.values[var_pct.values <= thre_val]
+    combined_rows = df[var].isin(combined_classes)
+    df.loc[combined_rows, var] = combined_label
+    return df
+```
+
+
+```python
+df = combine_levels(df, 'Product', 0.05, 'Others')
+pie(df, 'Product')
+```
+
+    0.0% of values are missing.
+    
+
+
+![png](output_31_1.png)
+
+
+![](Better_code_2.PNG)
+
+### Check independent variable - *'Sub-product'*.
+
+
+```python
+# pie(df, 'Sub-product')
+```
+
+
+```python
+df = combine_levels(df, 'Sub-product', 0.05, 'Others')
+pie(df, 'Sub-product')                                 
+```
+
+    27.0% of values are missing.
+    
+
+
+![png](output_35_1.png)
+
+
+
+```python
+df = vars_to_drop(df, ['Sub-product'])
+```
+
+    Data shape before/after deleting: (871873, 15)/(871873, 14).
+    
+
+### Check independent variable - *'Issue'*.
+
+
+```python
+# pie(df, 'Issue')
+```
+
+
+```python
+df = combine_levels(df, 'Issue', 0.03, 'Others')
+pie(df, 'Issue')
+```
+
+    0.0% of values are missing.
+    
+
+
+![png](output_39_1.png)
+
+
+### Check independent variable - *'Sub-issue'*.
+
+
+```python
+pie(df, 'Sub-issue')
+```
+
+    54.2% of values are missing.
+    Variable levels: 218
+    
+
+
+```python
+df = vars_to_drop(df, ['Sub-issue'])
+```
+
+    Data shape before/after deleting: (871873, 14)/(871873, 13).
+    
+
+### Check independent variable - *'Consumer complaint narrative'*.
+
+
+```python
+pie(df, 'Consumer complaint narrative')
+```
+
+    78.9% of values are missing.
+    Variable levels: 180128
+    
+
+
+```python
+df = vars_to_drop(df, ['Consumer complaint narrative'])
+```
+
+    Data shape before/after deleting: (871873, 13)/(871873, 12).
+    
+
+### Check independent variable - *'Company public response'*.
+
+
+```python
+df = combine_levels(df, 'Company public response', 0.03, 'Others')
+pie(df, 'Company public response')
+```
+
+    72.2% of values are missing.
+    
+
+
+![png](output_47_1.png)
+
+
+
+```python
+df = vars_to_drop(df, ['Company public response'])
+```
+
+    Data shape before/after deleting: (871873, 12)/(871873, 11).
+    
+
+### Check independent variable - *'Company'*.
+
+
+```python
+pie(df, 'Company')
+```
+
+    0.0% of values are missing.
+    Variable levels: 4409
+    
+
+
+```python
+company_appear_freq = df['Company'].value_counts(dropna=False)
+# company_appear_freq
+```
+
+
+```python
+fig, ax = plt.subplots(1, 2, figsize=(8.5, 3.5))
+
+# define a series of appearance threshold values
+thre1 = np.linspace(1, 1000, 100)                                              
+companies_left = []
+
+for thre_i in thre1:
+    company_ct_above_thre = (company_appear_freq > thre_i).sum()
+    companies_left.append(company_ct_above_thre)
+ax[0].plot(thre1, companies_left, linewidth=3)
+ax[0].set_xlabel('Frequency Threshold Value')
+ax[0].set_ylabel('Number of Companies Left');
+
+
+thre2 = np.linspace(1, 70000, 1000) 
+pct_obs_left = []
+for thre_i in thre2:
+    obs_left = company_appear_freq.values[company_appear_freq > thre_i].sum()
+    pct_obs_left.append(obs_left/df.shape[0])
+ax[1].plot(thre2, pct_obs_left, linewidth=3)
+ax[1].set_xlabel('Frequency Threshold Value')
+ax[1].set_ylabel('% of Observations Left')
+ax[1].ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+fig.tight_layout()
+```
+
+
+![png](output_52_0.png)
+
+
+**Question:** How to deal with the 4393 companies in the dataset? <br>
+Use **MeanEncoding**!!
+
+
+```python
+# mean encoding                                                               # need to imporve here
+from sklearn.model_selection import StratifiedKFold
+from itertools import product
+
+class MeanEncoder:
+    def __init__(self, categorical_features, n_splits=5, target_type='classification', prior_weight_func=None):
+        """
+        :param categorical_features: list of str, the name of the categorical columns to encode
+        :param n_splits: the number of splits used in mean encoding
+        :param target_type: str, 'regression' or 'classification'
+        :param prior_weight_func:
+        a function that takes in the number of observations, and outputs prior weight
+        when a dict is passed, the default exponential decay function will be used:
+        k: the number of observations needed for the posterior to be weighted equally as the prior
+        f: larger f --> smaller slope
+        """
+
+        self.categorical_features = categorical_features
+        self.n_splits = n_splits
+        self.learned_stats = {}
+
+        if target_type == 'classification':
+            self.target_type = target_type
+            self.target_values = []
+        else:
+            self.target_type = 'regression'
+            self.target_values = None
+
+        if isinstance(prior_weight_func, dict):
+            self.prior_weight_func = eval('lambda x: 1 / (1 + np.exp((x - k) / f))', dict(prior_weight_func, np=np))
+        elif callable(prior_weight_func):
+            self.prior_weight_func = prior_weight_func
+        else:
+            self.prior_weight_func = lambda x: 1 / (1 + np.exp((x - 2) / 1))
+
+    @staticmethod
+    def mean_encode_subroutine(X_train, y_train, X_test, variable, target, prior_weight_func):
+        X_train = X_train[[variable]].copy()
+        X_test = X_test[[variable]].copy()
+
+        if target is not None:
+            nf_name = '{}_pred_{}'.format(variable, target)
+            X_train['pred_temp'] = (y_train == target).astype(int)  # classification
+        else:
+            nf_name = '{}_pred'.format(variable)
+            X_train['pred_temp'] = y_train  # regression
+        prior = X_train['pred_temp'].mean()
+
+        col_avg_y = X_train.groupby(by=variable, axis=0)['pred_temp'].agg({'mean': 'mean', 'beta': 'size'})
+        col_avg_y['beta'] = prior_weight_func(col_avg_y['beta'])
+        col_avg_y[nf_name] = col_avg_y['beta'] * prior + (1 - col_avg_y['beta']) * col_avg_y['mean']
+        col_avg_y.drop(['beta', 'mean'], axis=1, inplace=True)
+
+        nf_train = X_train.join(col_avg_y, on=variable)[nf_name].values
+        nf_test = X_test.join(col_avg_y, on=variable).fillna(prior, inplace=False)[nf_name].values
+
+        return nf_train, nf_test, prior, col_avg_y
+
+    
+    def fit_transform(self, X, y):
+        """
+        :param X: pandas DataFrame, n_samples * n_features
+        :param y: pandas Series or numpy array, n_samples
+        :return X_new: the transformed pandas DataFrame containing mean-encoded categorical features
+        """
+        X_new = X.copy()
+        if self.target_type == 'classification':
+            skf = StratifiedKFold(self.n_splits)
+        else:
+            skf = KFold(self.n_splits)
+
+        if self.target_type == 'classification':
+            self.target_values = sorted(set(y))
+            self.learned_stats = {'{}_pred_{}'.format(variable, target): [] for variable, target in
+                                  product(self.categorical_features, self.target_values)}
+            for variable, target in product(self.categorical_features, self.target_values):
+                nf_name = '{}_pred_{}'.format(variable, target)
+                X_new.loc[:, nf_name] = np.nan
+                for large_ind, small_ind in skf.split(y, y):
+                    nf_large, nf_small, prior, col_avg_y = MeanEncoder.mean_encode_subroutine(
+                        X_new.iloc[large_ind], y.iloc[large_ind], X_new.iloc[small_ind], variable, target, self.prior_weight_func)
+                    X_new.iloc[small_ind, -1] = nf_small
+                    self.learned_stats[nf_name].append((prior, col_avg_y))
+        else:
+            self.learned_stats = {'{}_pred'.format(variable): [] for variable in self.categorical_features}
+            for variable in self.categorical_features:
+                nf_name = '{}_pred'.format(variable)
+                X_new.loc[:, nf_name] = np.nan
+                for large_ind, small_ind in skf.split(y, y):
+                    nf_large, nf_small, prior, col_avg_y = MeanEncoder.mean_encode_subroutine(
+                        X_new.iloc[large_ind], y.iloc[large_ind], X_new.iloc[small_ind], variable, None, self.prior_weight_func)
+                    X_new.iloc[small_ind, -1] = nf_small
+                    self.learned_stats[nf_name].append((prior, col_avg_y))
+        return X_new
+
+    
+    def transform(self, X):
+        """
+        :param X: pandas DataFrame, n_samples * n_features
+        :return X_new: the transformed pandas DataFrame containing mean-encoded categorical features
+        """
+        X_new = X.copy()
+
+        if self.target_type == 'classification':
+            for variable, target in product(self.categorical_features, self.target_values):
+                nf_name = '{}_pred_{}'.format(variable, target)
+                X_new[nf_name] = 0
+                for prior, col_avg_y in self.learned_stats[nf_name]:
+                    X_new[nf_name] += X_new[[variable]].join(col_avg_y, on=variable).fillna(prior, inplace=False)[
+                        nf_name]
+                X_new[nf_name] /= self.n_splits
+        else:
+            for variable in self.categorical_features:
+                nf_name = '{}_pred'.format(variable)
+                X_new[nf_name] = 0
+                for prior, col_avg_y in self.learned_stats[nf_name]:
+                    X_new[nf_name] += X_new[[variable]].join(col_avg_y, on=variable).fillna(prior, inplace=False)[
+                        nf_name]
+                X_new[nf_name] /= self.n_splits
+
+        return X_new
+```
+
+
+```python
+me = MeanEncoder(categorical_features=['Company'], n_splits=10)     
+df = me.fit_transform(df, df['y'])
+df.head(3)
+```
+
+
+
+
+<div>
+<style>
+    .dataframe thead tr:only-child th {
+        text-align: right;
+    }
+
+    .dataframe thead th {
+        text-align: left;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Date received</th>
+      <th>Product</th>
+      <th>Issue</th>
+      <th>Company</th>
+      <th>State</th>
+      <th>ZIP code</th>
+      <th>Tags</th>
+      <th>Submitted via</th>
+      <th>Date sent to company</th>
+      <th>y</th>
+      <th>Complaint ID</th>
+      <th>Company_pred_0</th>
+      <th>Company_pred_1</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2014-03-12</td>
+      <td>Mortgage</td>
+      <td>Loan modification,collection,foreclosure</td>
+      <td>M&amp;T BANK CORPORATION</td>
+      <td>MI</td>
+      <td>48382</td>
+      <td>NaN</td>
+      <td>Referral</td>
+      <td>2014-03-17</td>
+      <td>1</td>
+      <td>759217</td>
+      <td>0.011866</td>
+      <td>0.988134</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2016-10-01</td>
+      <td>Credit reporting</td>
+      <td>Incorrect information on credit report</td>
+      <td>TRANSUNION INTERMEDIATE HOLDINGS, INC.</td>
+      <td>AL</td>
+      <td>352XX</td>
+      <td>NaN</td>
+      <td>Web</td>
+      <td>2016-10-05</td>
+      <td>1</td>
+      <td>2141773</td>
+      <td>0.001132</td>
+      <td>0.998868</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2016-10-17</td>
+      <td>Others</td>
+      <td>Others</td>
+      <td>CITIZENS FINANCIAL GROUP, INC.</td>
+      <td>PA</td>
+      <td>177XX</td>
+      <td>Older American</td>
+      <td>Web</td>
+      <td>2016-10-20</td>
+      <td>1</td>
+      <td>2163100</td>
+      <td>0.000516</td>
+      <td>0.999484</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+### Check independent variable - *'State'*.
+
+
+```python
+pie(df, 'State')
+```
+
+    1.3% of values are missing.
+    Variable levels: 63
+    
+
+
+```python
+# remove missing values
+shape1 = df.shape
+
+df = df.loc[-df['State'].isnull(), :]
+shape2 = df.shape
+print("Shapes before/after deleting: {}/{}.".format(shape1, shape2))
+```
+
+    Shapes before/after deleting: (871873, 13)/(860657, 13).
+    
+
+
+```python
+# mean encoding
+me = MeanEncoder(categorical_features=['State'], n_splits=10)
+df = me.fit_transform(df, df['y'])
+```
+
+
+```python
+df = vars_to_drop(df, ['ZIP code'])
+```
+
+    Data shape before/after deleting: (860657, 15)/(860657, 14).
+    
+
+### Check independent variable - *'Tags'*.
+
+
+```python
+pie(df, 'Tags')
+```
+
+    86.0% of values are missing.
+    
+
+
+![png](output_62_1.png)
+
+
+
+```python
+df = vars_to_drop(df, ['Tags'])
+```
+
+    Data shape before/after deleting: (860657, 14)/(860657, 13).
+    
+
+### Check independent variable - *'Submitted via'*.
+
+
+```python
+# pie(df, 'Submitted via')
+```
+
+
+```python
+df = combine_levels(df, 'Submitted via', 0.05, 'Others')
+pie(df, 'Submitted via')
+```
+
+    0.0% of values are missing.
+    
+
+
+![png](output_66_1.png)
+
+
+## Check continuous independent variable(s).
+
+
+```python
+# Create a new dataframe 'df_dt' which contains date/time info. and y:
+df_dt = df[['Date received', 'Date sent to company', 'y']]
+df_dt['Total Complaints'] = 1
+df_dt['Timely_resp (Y)'] = np.where((df_dt['y'] == 1), 1, 0)
+df_dt['Timely_resp (N)'] = np.where((df_dt['y'] == 0), 1, 0)
+df_dt.head(3)
+```
+
+
+
+
+<div>
+<style>
+    .dataframe thead tr:only-child th {
+        text-align: right;
+    }
+
+    .dataframe thead th {
+        text-align: left;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Date received</th>
+      <th>Date sent to company</th>
+      <th>y</th>
+      <th>Total Complaints</th>
+      <th>Timely_resp (Y)</th>
+      <th>Timely_resp (N)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2014-03-12</td>
+      <td>2014-03-17</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>2016-10-01</td>
+      <td>2016-10-05</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>2016-10-17</td>
+      <td>2016-10-20</td>
+      <td>1</td>
+      <td>1</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+# plot the trend over time
+df_dt[['Total Complaints', 'Timely_resp (Y)', 'Timely_resp (N)']].groupby(
+    [df_dt["Date received"].dt.year, df_dt["Date received"].dt.month]).sum().plot(kind='line', figsize =(9.5, 3.5));
+plt.xlabel('Date (Year, Month)')
+plt.ylabel('Frequency');
+
+del df_dt
+```
+
+
+![png](output_69_0.png)
+
+
+
+```python
+# create a new variable 'Duration'.
+df['Duration'] = df['Date sent to company'] - df['Date received']
+df['Duration'] = pd.to_timedelta(df['Duration']).astype('timedelta64[D]')
+df.describe()
+```
+
+
+
+
+<div>
+<style>
+    .dataframe thead tr:only-child th {
+        text-align: right;
+    }
+
+    .dataframe thead th {
+        text-align: left;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>y</th>
+      <th>Complaint ID</th>
+      <th>Company_pred_0</th>
+      <th>Company_pred_1</th>
+      <th>State_pred_0</th>
+      <th>State_pred_1</th>
+      <th>Duration</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>860657.000000</td>
+      <td>8.606570e+05</td>
+      <td>860657.000000</td>
+      <td>8.606570e+05</td>
+      <td>8.606570e+05</td>
+      <td>860657.000000</td>
+      <td>860657.000000</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>0.972412</td>
+      <td>1.441851e+06</td>
+      <td>0.026466</td>
+      <td>9.735341e-01</td>
+      <td>2.758682e-02</td>
+      <td>0.972413</td>
+      <td>3.942510</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>0.163790</td>
+      <td>7.915907e+05</td>
+      <td>0.082842</td>
+      <td>8.284186e-02</td>
+      <td>3.850946e-03</td>
+      <td>0.003851</td>
+      <td>16.588944</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>0.000000</td>
+      <td>1.000000e+00</td>
+      <td>0.000000</td>
+      <td>6.433875e-112</td>
+      <td>2.146620e-21</td>
+      <td>0.939107</td>
+      <td>-1.000000</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>1.000000</td>
+      <td>7.681030e+05</td>
+      <td>0.001167</td>
+      <td>9.777882e-01</td>
+      <td>2.593899e-02</td>
+      <td>0.970102</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>1.000000</td>
+      <td>1.496935e+06</td>
+      <td>0.006711</td>
+      <td>9.932892e-01</td>
+      <td>2.789063e-02</td>
+      <td>0.972109</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>1.000000</td>
+      <td>2.147203e+06</td>
+      <td>0.022212</td>
+      <td>9.988331e-01</td>
+      <td>2.989849e-02</td>
+      <td>0.974061</td>
+      <td>3.000000</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>1.000000</td>
+      <td>2.688971e+06</td>
+      <td>1.000000</td>
+      <td>1.000000e+00</td>
+      <td>6.089310e-02</td>
+      <td>1.000000</td>
+      <td>1962.000000</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+# remove negative values for variable 'Duration'
+shape1 = df.shape
+rows_to_drop = df['Duration'] < 0
+df = df.loc[-rows_to_drop, :]
+
+shape2 = df.shape
+print("Data shape before/after deleting: {}/{}.".format(shape1, shape2))
+```
+
+    Data shape before/after deleting: (860657, 14)/(853616, 14).
+    
+
+
+```python
+# plot pdf for variable 'Duration'
+fig, axes = plt.subplots(1,2, figsize=(9.5, 3.5))
+max_dura = 250
+axes[0].hist(df['Duration'], bins=500, normed=True, cumulative=False, alpha=0.5)
+axes[0].set_xlabel('Duration (Days)')
+axes[0].set_xlim(-5, max_dura+5)
+axes[0].set_ylabel('PDF');
+
+# plot cdf for variable 'Duration'
+bin_vals = axes[1].hist(df['Duration'], bins=500, normed=True, cumulative=True, alpha=0.7)
+axes[1].set_xlabel('Duration (Days)')
+axes[1].set_xlim(-5, max_dura+5)
+axes[1].set_ylabel('CDF');
+```
+
+
+![png](output_72_0.png)
+
+
+
+```python
+dur_ct = len(df[df['Duration'] > max_dura])
+print("Records with duration > {} days: {:.0f}.".format(max_dura, dur_ct))
+print("It accounts for {:,.2%}.".format(dur_ct/df.shape[0]))
+```
+
+    Records with duration > 250 days: 458.
+    It accounts for 0.05%.
+    
+
+I will keep observations with long duration values for now.
+
+
+```python
+durtaion_y = df[['Duration', 'y']].groupby(['y']).agg({'Duration':['mean','std']})
+# durtaion_y
+```
+
+
+```python
+xvals = np.array([0,1])
+plt.figure(figsize=(6, 3.5))
+plt.bar(xvals, durtaion_y['Duration']['mean'], width=0.7, alpha=0.75)
+plt.xticks([0,1], ['No', 'Yes'])
+plt.xlabel('Timely Response')
+plt.ylabel('Mean Duration');
+```
+
+
+![png](output_76_0.png)
+
+
+
+```python
+# add a new variable 'Weekday' based on 'Date sent to company'
+df['Weekday'] = df['Date sent to company'].dt.strftime("%a")
+```
+
+Check all remaining variables:
+
+
+```python
+df.columns.values
+```
+
+
+
+
+    array(['Date received', 'Product', 'Issue', 'Company', 'State',
+           'Submitted via', 'Date sent to company', 'y', 'Complaint ID',
+           'Company_pred_0', 'Company_pred_1', 'State_pred_0', 'State_pred_1',
+           'Duration', 'Weekday'], dtype=object)
+
+
+
+Using the following function **bar_class_var()** to plot bar chart for any categorical variable.
+
+
+```python
+def bar_class_var(df, var, fig_wid=8, fig_ht=4):
+    var_freq = df[var].value_counts()
+    y_pos = np.arange(len(var_freq))
+    width = var_freq.values
+
+    plt.figure(figsize=(fig_wid, fig_ht))
+    plt.barh(y_pos, width)
+    plt.yticks(y_pos, var_freq.index)
+    plt.xlabel('Frequency')
+    plt.ylabel(var);
+```
+
+
+```python
+bar_class_var(df, 'Weekday')
+```
+
+
+![png](output_82_0.png)
+
+
+# Compute relevance between i.v. and d.v.
+
+
+```python
+print('Variables in the dataset df: \n', df.columns.values)
+print('\n Shape of df: ', df.shape)
+```
+
+    Variables in the dataset df: 
+     ['Date received' 'Product' 'Issue' 'Company' 'State' 'Submitted via'
+     'Date sent to company' 'y' 'Complaint ID' 'Company_pred_0'
+     'Company_pred_1' 'State_pred_0' 'State_pred_1' 'Duration' 'Weekday']
+    
+     Shape of df:  (853616, 15)
+    
+
+**Get a new clean dataframe.** Keep **df** unchanged (for future usage).
+
+
+```python
+df2 = df[['Duration', 'Company_pred_0', 'State_pred_0', 
+          'Weekday', 'Product', 'Issue', 'Submitted via', 
+          'y']]
+df2.head(3)
+```
+
+
+
+
+<div>
+<style>
+    .dataframe thead tr:only-child th {
+        text-align: right;
+    }
+
+    .dataframe thead th {
+        text-align: left;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Duration</th>
+      <th>Company_pred_0</th>
+      <th>State_pred_0</th>
+      <th>Weekday</th>
+      <th>Product</th>
+      <th>Issue</th>
+      <th>Submitted via</th>
+      <th>y</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>5.0</td>
+      <td>0.011866</td>
+      <td>0.023391</td>
+      <td>Mon</td>
+      <td>Mortgage</td>
+      <td>Loan modification,collection,foreclosure</td>
+      <td>Referral</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>4.0</td>
+      <td>0.001132</td>
+      <td>0.034049</td>
+      <td>Wed</td>
+      <td>Credit reporting</td>
+      <td>Incorrect information on credit report</td>
+      <td>Web</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3.0</td>
+      <td>0.000516</td>
+      <td>0.027384</td>
+      <td>Thu</td>
+      <td>Others</td>
+      <td>Others</td>
+      <td>Web</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+Create dummy variables for categorical variables.
+
+
+```python
+df2 = pd.get_dummies(df2, columns=['Weekday', 'Product', 'Issue', 'Submitted via'], 
+                           prefix=['Weekday', 'Product', 'Issue', 'Submit_via'])
+df2.head(3)
+```
+
+
+
+
+<div>
+<style>
+    .dataframe thead tr:only-child th {
+        text-align: right;
+    }
+
+    .dataframe thead th {
+        text-align: left;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Duration</th>
+      <th>Company_pred_0</th>
+      <th>State_pred_0</th>
+      <th>y</th>
+      <th>Weekday_Fri</th>
+      <th>Weekday_Mon</th>
+      <th>Weekday_Sat</th>
+      <th>Weekday_Sun</th>
+      <th>Weekday_Thu</th>
+      <th>Weekday_Tue</th>
+      <th>...</th>
+      <th>Issue_Disclosure verification of debt</th>
+      <th>Issue_Incorrect information on credit report</th>
+      <th>Issue_Loan modification,collection,foreclosure</th>
+      <th>Issue_Loan servicing, payments, escrow account</th>
+      <th>Issue_Others</th>
+      <th>Submit_via_Others</th>
+      <th>Submit_via_Phone</th>
+      <th>Submit_via_Postal mail</th>
+      <th>Submit_via_Referral</th>
+      <th>Submit_via_Web</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>5.0</td>
+      <td>0.011866</td>
+      <td>0.023391</td>
+      <td>1</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>4.0</td>
+      <td>0.001132</td>
+      <td>0.034049</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>...</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>3.0</td>
+      <td>0.000516</td>
+      <td>0.027384</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>...</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+<p>3 rows × 30 columns</p>
+</div>
+
+
+
+
+```python
+print('Variables in the dataset df2: \n', df2.columns.values)
+print('\nShape of df2: ', df2.shape)  
+```
+
+    Variables in the dataset df2: 
+     ['Duration' 'Company_pred_0' 'State_pred_0' 'y' 'Weekday_Fri' 'Weekday_Mon'
+     'Weekday_Sat' 'Weekday_Sun' 'Weekday_Thu' 'Weekday_Tue' 'Weekday_Wed'
+     'Product_Bank account or service' 'Product_Credit card'
+     'Product_Credit reporting'
+     'Product_Credit reporting, credit repair services, or other personal consumer reports'
+     'Product_Debt collection' 'Product_Mortgage' 'Product_Others'
+     'Issue_Account opening, closing, or management'
+     "Issue_Cont'd attempts collect debt not owed"
+     'Issue_Disclosure verification of debt'
+     'Issue_Incorrect information on credit report'
+     'Issue_Loan modification,collection,foreclosure'
+     'Issue_Loan servicing, payments, escrow account' 'Issue_Others'
+     'Submit_via_Others' 'Submit_via_Phone' 'Submit_via_Postal mail'
+     'Submit_via_Referral' 'Submit_via_Web']
+    
+    Shape of df2:  (853616, 30)
+    
+
+
+```python
+# using pie chart to determine which level will be removed, if necessary
+var = 'Submitted via'
+pie(df, var)
+```
+
+    0.0% of values are missing.
+    
+
+
+![png](output_90_1.png)
+
+
+
+```python
+vars = ['Weekday_Sun', 'Product_Credit reporting, credit repair services, or other personal consumer reports', 
+        'Issue_Disclosure verification of debt', 'Submit_via_Postal mail']
+df2 = vars_to_drop(df2, vars)
+```
+
+    Data shape before/after deleting: (853616, 30)/(853616, 26).
+    
+
+
+```python
+df2.corr(method='pearson').style.format("{:.2}").background_gradient(cmap=plt.get_cmap('Reds'), axis=1)          
+```
+
+
+
+
+<style  type="text/css" >
+    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col0 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col1 {
+            background-color:  #fedccd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col2 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col3 {
+            background-color:  #ffede5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col4 {
+            background-color:  #fee8dd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col5 {
+            background-color:  #fee5d9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col6 {
+            background-color:  #ffede5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col7 {
+            background-color:  #fee7db;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col8 {
+            background-color:  #fee6da;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col9 {
+            background-color:  #fee8dd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col10 {
+            background-color:  #feeae1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col11 {
+            background-color:  #ffebe2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col12 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col13 {
+            background-color:  #fee5d9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col14 {
+            background-color:  #fee1d4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col15 {
+            background-color:  #fee8de;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col16 {
+            background-color:  #fee9df;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col17 {
+            background-color:  #fee7db;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col18 {
+            background-color:  #fee5d9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col19 {
+            background-color:  #fedccd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col20 {
+            background-color:  #fee9df;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col21 {
+            background-color:  #ffefe8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col22 {
+            background-color:  #fee5d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col23 {
+            background-color:  #fee6da;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col24 {
+            background-color:  #fedfd0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col25 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col0 {
+            background-color:  #fc9474;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col1 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col2 {
+            background-color:  #fc9b7c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col3 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col4 {
+            background-color:  #fca285;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col5 {
+            background-color:  #fca285;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col6 {
+            background-color:  #fca486;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col7 {
+            background-color:  #fca183;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col8 {
+            background-color:  #fca183;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col9 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col10 {
+            background-color:  #fcaa8d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col11 {
+            background-color:  #fcb095;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col12 {
+            background-color:  #fcbba1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col13 {
+            background-color:  #fb6d4d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col14 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col15 {
+            background-color:  #fca486;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col16 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col17 {
+            background-color:  #fc8767;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col18 {
+            background-color:  #fcb79c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col19 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col20 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col21 {
+            background-color:  #fca183;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col22 {
+            background-color:  #fca285;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col23 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col24 {
+            background-color:  #fca98c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col25 {
+            background-color:  #fc997a;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col0 {
+            background-color:  #ffeee6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col1 {
+            background-color:  #fee8de;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col2 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col3 {
+            background-color:  #fff2eb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col4 {
+            background-color:  #ffeee7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col5 {
+            background-color:  #ffefe8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col6 {
+            background-color:  #ffede5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col7 {
+            background-color:  #ffeee7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col8 {
+            background-color:  #ffeee7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col9 {
+            background-color:  #ffeee7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col10 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col11 {
+            background-color:  #fff3ed;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col12 {
+            background-color:  #ffebe2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col13 {
+            background-color:  #fee6da;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col14 {
+            background-color:  #fff2ec;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col15 {
+            background-color:  #ffede5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col16 {
+            background-color:  #fff2eb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col17 {
+            background-color:  #feeae1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col18 {
+            background-color:  #ffece3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col19 {
+            background-color:  #fff1ea;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col20 {
+            background-color:  #ffeee7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col21 {
+            background-color:  #ffeee7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col22 {
+            background-color:  #fff0e8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col23 {
+            background-color:  #fff0e9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col24 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col25 {
+            background-color:  #fee6da;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col0 {
+            background-color:  #fcaa8d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col1 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col2 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col3 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col4 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col5 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col6 {
+            background-color:  #fca285;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col7 {
+            background-color:  #fca285;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col8 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col9 {
+            background-color:  #fca183;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col10 {
+            background-color:  #fca183;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col11 {
+            background-color:  #fc9b7c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col12 {
+            background-color:  #fc9373;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col13 {
+            background-color:  #fcbea5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col14 {
+            background-color:  #fc9c7d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col15 {
+            background-color:  #fca285;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col16 {
+            background-color:  #fca183;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col17 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col18 {
+            background-color:  #fc9576;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col19 {
+            background-color:  #fc9d7f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col20 {
+            background-color:  #fc9e80;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col21 {
+            background-color:  #fca486;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col22 {
+            background-color:  #fca183;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col23 {
+            background-color:  #fca486;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col24 {
+            background-color:  #fc9d7f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col25 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col0 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col1 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col2 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col3 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col4 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col5 {
+            background-color:  #fff3ed;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col6 {
+            background-color:  #fee3d7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col7 {
+            background-color:  #fff4ee;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col8 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col9 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col10 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col11 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col12 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col13 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col14 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col15 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col16 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col17 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col18 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col19 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col20 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col21 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col22 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col23 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col24 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col25 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col0 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col1 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col2 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col3 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col4 {
+            background-color:  #fff2ec;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col5 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col6 {
+            background-color:  #fee3d7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col7 {
+            background-color:  #fff4ee;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col8 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col9 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col10 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col11 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col12 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col13 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col14 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col15 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col16 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col17 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col18 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col19 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col20 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col21 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col22 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col23 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col24 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col25 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col0 {
+            background-color:  #ffebe2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col1 {
+            background-color:  #fee7db;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col2 {
+            background-color:  #fee4d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col3 {
+            background-color:  #fee6da;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col4 {
+            background-color:  #fff4ee;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col5 {
+            background-color:  #fff4ee;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col6 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col7 {
+            background-color:  #fff4ef;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col8 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col9 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col10 {
+            background-color:  #fee8dd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col11 {
+            background-color:  #fee5d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col12 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col13 {
+            background-color:  #fee3d7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col14 {
+            background-color:  #ffede5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col15 {
+            background-color:  #fee5d9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col16 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col17 {
+            background-color:  #fee3d7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col18 {
+            background-color:  #fee4d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col19 {
+            background-color:  #ffece4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col20 {
+            background-color:  #fee8dd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col21 {
+            background-color:  #fee1d3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col22 {
+            background-color:  #fee8de;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col23 {
+            background-color:  #ffece4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col24 {
+            background-color:  #fff1ea;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col25 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col0 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col1 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col2 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col3 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col4 {
+            background-color:  #fff2ec;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col5 {
+            background-color:  #fff2ec;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col6 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col7 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col8 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col9 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col10 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col11 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col12 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col13 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col14 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col15 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col16 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col17 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col18 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col19 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col20 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col21 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col22 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col23 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col24 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col25 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col0 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col1 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col2 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col3 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col4 {
+            background-color:  #fff2ec;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col5 {
+            background-color:  #fff2ec;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col6 {
+            background-color:  #fee2d5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col7 {
+            background-color:  #fff4ee;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col8 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col9 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col10 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col11 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col12 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col13 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col14 {
+            background-color:  #fdc7b2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col15 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col16 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col17 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col18 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col19 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col20 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col21 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col22 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col23 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col24 {
+            background-color:  #fdc7b2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col25 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col0 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col1 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col2 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col3 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col4 {
+            background-color:  #fff3ed;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col5 {
+            background-color:  #fff3ed;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col6 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col7 {
+            background-color:  #fff4ef;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col8 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col9 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col10 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col11 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col12 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col13 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col14 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col15 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col16 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col17 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col18 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col19 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col20 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col21 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col22 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col23 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col24 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col25 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col0 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col1 {
+            background-color:  #fedccd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col2 {
+            background-color:  #fedecf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col3 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col4 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col5 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col6 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col7 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col8 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col9 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col10 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col11 {
+            background-color:  #fee8de;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col12 {
+            background-color:  #ffede5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col13 {
+            background-color:  #ffefe8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col14 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col15 {
+            background-color:  #feeae0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col16 {
+            background-color:  #d82422;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col17 {
+            background-color:  #fee5d9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col18 {
+            background-color:  #feeae0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col19 {
+            background-color:  #feeae1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col20 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col21 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col22 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col23 {
+            background-color:  #fcbba1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col24 {
+            background-color:  #fcab8f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col25 {
+            background-color:  #fff0e8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col0 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col1 {
+            background-color:  #fee2d5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col2 {
+            background-color:  #fedaca;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col3 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col4 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col5 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col6 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col7 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col8 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col9 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col10 {
+            background-color:  #fee8dd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col11 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col12 {
+            background-color:  #ffede5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col13 {
+            background-color:  #ffefe8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col14 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col15 {
+            background-color:  #feeae0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col16 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col17 {
+            background-color:  #fee5d9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col18 {
+            background-color:  #feeae0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col19 {
+            background-color:  #feeae1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col20 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col21 {
+            background-color:  #fb7c5c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col22 {
+            background-color:  #fdd4c2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col23 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col24 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col25 {
+            background-color:  #fdd4c2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col0 {
+            background-color:  #fdc5ae;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col1 {
+            background-color:  #fee1d3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col2 {
+            background-color:  #fcc2aa;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col3 {
+            background-color:  #fcb69b;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col4 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col5 {
+            background-color:  #fdc6b0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col6 {
+            background-color:  #fcc3ab;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col7 {
+            background-color:  #fdc7b2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col8 {
+            background-color:  #fdc6b0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col9 {
+            background-color:  #fdc7b2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col10 {
+            background-color:  #fee5d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col11 {
+            background-color:  #fee5d9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col12 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col13 {
+            background-color:  #ffeee6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col14 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col15 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col16 {
+            background-color:  #fedccd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col17 {
+            background-color:  #fee1d4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col18 {
+            background-color:  #a60f15;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col19 {
+            background-color:  #fee8dd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col20 {
+            background-color:  #fee4d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col21 {
+            background-color:  #ffeee7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col22 {
+            background-color:  #fdc5ae;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col23 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col24 {
+            background-color:  #fee0d2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col25 {
+            background-color:  #fcb89e;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col0 {
+            background-color:  #fcbea5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col1 {
+            background-color:  #fc8565;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col2 {
+            background-color:  #fcb69b;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col3 {
+            background-color:  #fedfd0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col4 {
+            background-color:  #fcc4ad;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col5 {
+            background-color:  #fcc3ab;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col6 {
+            background-color:  #fcbea5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col7 {
+            background-color:  #fcc1a8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col8 {
+            background-color:  #fcc3ab;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col9 {
+            background-color:  #fcc2aa;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col10 {
+            background-color:  #fee3d7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col11 {
+            background-color:  #fee4d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col12 {
+            background-color:  #feeae1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col13 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col14 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col15 {
+            background-color:  #fee6da;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col16 {
+            background-color:  #fed9c9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col17 {
+            background-color:  #e32f27;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col18 {
+            background-color:  #fee6da;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col19 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col20 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col21 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col22 {
+            background-color:  #fdc6b0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col23 {
+            background-color:  #fcc1a8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col24 {
+            background-color:  #fedfd0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col25 {
+            background-color:  #fca285;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col0 {
+            background-color:  #fca98c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col1 {
+            background-color:  #fcb89e;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col2 {
+            background-color:  #fcb89e;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col3 {
+            background-color:  #fcad90;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col4 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col5 {
+            background-color:  #fcb095;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col6 {
+            background-color:  #fcbea5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col7 {
+            background-color:  #fcb095;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col8 {
+            background-color:  #fcaf93;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col9 {
+            background-color:  #fcb095;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col10 {
+            background-color:  #fedfd0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col11 {
+            background-color:  #fee0d2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col12 {
+            background-color:  #fee8dd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col13 {
+            background-color:  #ffebe2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col14 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col15 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col16 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col17 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col18 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col19 {
+            background-color:  #d11e1f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col20 {
+            background-color:  #ea362a;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col21 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col22 {
+            background-color:  #fca98c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col23 {
+            background-color:  #fcb499;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col24 {
+            background-color:  #fc8565;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col25 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col0 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col1 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col2 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col3 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col4 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col5 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col6 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col7 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col8 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col9 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col10 {
+            background-color:  #fee7db;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col11 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col12 {
+            background-color:  #ffece4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col13 {
+            background-color:  #ffeee7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col14 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col15 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col16 {
+            background-color:  #fee1d3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col17 {
+            background-color:  #fee4d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col18 {
+            background-color:  #fee8de;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col19 {
+            background-color:  #feeae0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col20 {
+            background-color:  #fee6da;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col21 {
+            background-color:  #fb7050;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col22 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col23 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col24 {
+            background-color:  #fedfd0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col25 {
+            background-color:  #fcbba1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col0 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col1 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col2 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col3 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col4 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col5 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col6 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col7 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col8 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col9 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col10 {
+            background-color:  #d72322;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col11 {
+            background-color:  #fee1d4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col12 {
+            background-color:  #fee4d8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col13 {
+            background-color:  #fee5d9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col14 {
+            background-color:  #fee9df;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col15 {
+            background-color:  #fee2d5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col16 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col17 {
+            background-color:  #fedfd0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col18 {
+            background-color:  #fee2d5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col19 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col20 {
+            background-color:  #fee1d3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col21 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col22 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col23 {
+            background-color:  #fcbfa7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col24 {
+            background-color:  #fcb89e;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col25 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col0 {
+            background-color:  #fcc3ab;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col1 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col2 {
+            background-color:  #fcbea5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col3 {
+            background-color:  #fdd4c2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col4 {
+            background-color:  #fdc5ae;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col5 {
+            background-color:  #fcc4ad;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col6 {
+            background-color:  #fcc1a8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col7 {
+            background-color:  #fcc4ad;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col8 {
+            background-color:  #fdc5ae;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col9 {
+            background-color:  #fdc5ae;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col10 {
+            background-color:  #fed9c9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col11 {
+            background-color:  #fedaca;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col12 {
+            background-color:  #fee0d2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col13 {
+            background-color:  #e43027;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col14 {
+            background-color:  #fee7db;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col15 {
+            background-color:  #fedccd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col16 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col17 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col18 {
+            background-color:  #fedbcc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col19 {
+            background-color:  #fedccd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col20 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col21 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col22 {
+            background-color:  #fdc7b2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col23 {
+            background-color:  #fcc2aa;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col24 {
+            background-color:  #fdd7c6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col25 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col0 {
+            background-color:  #fcaf93;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col1 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col2 {
+            background-color:  #fcb095;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col3 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col4 {
+            background-color:  #fcb69b;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col5 {
+            background-color:  #fcb499;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col6 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col7 {
+            background-color:  #fcb499;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col8 {
+            background-color:  #fcb499;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col9 {
+            background-color:  #fcb499;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col10 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col11 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col12 {
+            background-color:  #a10e15;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col13 {
+            background-color:  #fedaca;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col14 {
+            background-color:  #fee3d6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col15 {
+            background-color:  #fdd2bf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col16 {
+            background-color:  #fdc5ae;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col17 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col18 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col19 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col20 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col21 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col22 {
+            background-color:  #fcb095;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col23 {
+            background-color:  #fcc2aa;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col24 {
+            background-color:  #fdc6b0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col25 {
+            background-color:  #fcad90;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col0 {
+            background-color:  #fca285;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col1 {
+            background-color:  #fcb499;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col2 {
+            background-color:  #fcb499;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col3 {
+            background-color:  #fcab8f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col4 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col5 {
+            background-color:  #fcaf93;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col6 {
+            background-color:  #fcbba1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col7 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col8 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col9 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col10 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col11 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col12 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col13 {
+            background-color:  #fed9c9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col14 {
+            background-color:  #d01d1f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col15 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col16 {
+            background-color:  #fcc3ab;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col17 {
+            background-color:  #fdc7b2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col18 {
+            background-color:  #fdd0bc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col19 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col20 {
+            background-color:  #fdcbb6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col21 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col22 {
+            background-color:  #fca689;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col23 {
+            background-color:  #fcb398;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col24 {
+            background-color:  #fc7f5f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col25 {
+            background-color:  #fdd4c2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col0 {
+            background-color:  #fcbfa7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col1 {
+            background-color:  #fcc2aa;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col2 {
+            background-color:  #fcbea5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col3 {
+            background-color:  #fcb99f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col4 {
+            background-color:  #fcbda4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col5 {
+            background-color:  #fcbca2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col6 {
+            background-color:  #fcc1a8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col7 {
+            background-color:  #fcbda4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col8 {
+            background-color:  #fcbca2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col9 {
+            background-color:  #fcbda4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col10 {
+            background-color:  #fdd4c2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col11 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col12 {
+            background-color:  #fedccd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col13 {
+            background-color:  #fee0d2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col14 {
+            background-color:  #ee3a2c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col15 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col16 {
+            background-color:  #fdccb8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col17 {
+            background-color:  #fdd1be;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col18 {
+            background-color:  #fdd7c6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col19 {
+            background-color:  #fed9c9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col20 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col21 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col22 {
+            background-color:  #fcbba1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col23 {
+            background-color:  #fcbba1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col24 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col25 {
+            background-color:  #fdc7b2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col0 {
+            background-color:  #fcbba1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col1 {
+            background-color:  #fcaf93;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col2 {
+            background-color:  #fcb095;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col3 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col4 {
+            background-color:  #fcaf93;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col5 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col6 {
+            background-color:  #fca98c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col7 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col8 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col9 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col10 {
+            background-color:  #fca98c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col11 {
+            background-color:  #f96346;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col12 {
+            background-color:  #fedfd0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col13 {
+            background-color:  #fcbfa7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col14 {
+            background-color:  #fff4ee;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col15 {
+            background-color:  #f7593f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col16 {
+            background-color:  #fee0d2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col17 {
+            background-color:  #fee7dc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col18 {
+            background-color:  #fff3ed;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col19 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col20 {
+            background-color:  #ffece4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col21 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col22 {
+            background-color:  #fcb99f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col23 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col24 {
+            background-color:  #fdc9b3;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col25 {
+            background-color:  #fc9373;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col0 {
+            background-color:  #fdd3c1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col1 {
+            background-color:  #fedaca;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col2 {
+            background-color:  #fedbcc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col3 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col4 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col5 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col6 {
+            background-color:  #fedecf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col7 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col8 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col9 {
+            background-color:  #fdd7c6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col10 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col11 {
+            background-color:  #fedbcc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col12 {
+            background-color:  #fdd7c6;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col13 {
+            background-color:  #fedecf;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col14 {
+            background-color:  #fdcebb;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col15 {
+            background-color:  #fedccd;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col16 {
+            background-color:  #fed8c7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col17 {
+            background-color:  #fedbcc;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col18 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col19 {
+            background-color:  #fdcdb9;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col20 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col21 {
+            background-color:  #fee1d4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col22 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col23 {
+            background-color:  #fee0d2;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col24 {
+            background-color:  #fee3d7;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col25 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col0 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col1 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col2 {
+            background-color:  #fcb398;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col3 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col4 {
+            background-color:  #fcaf93;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col5 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col6 {
+            background-color:  #fcbba1;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col7 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col8 {
+            background-color:  #fcaf93;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col9 {
+            background-color:  #fcad90;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col10 {
+            background-color:  #fc997a;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col11 {
+            background-color:  #fcad90;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col12 {
+            background-color:  #fcc1a8;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col13 {
+            background-color:  #fcaf93;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col14 {
+            background-color:  #fcb296;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col15 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col16 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col17 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col18 {
+            background-color:  #fcbea5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col19 {
+            background-color:  #fcb398;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col20 {
+            background-color:  #fcad90;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col21 {
+            background-color:  #fcae92;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col22 {
+            background-color:  #fcb79c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col23 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col24 {
+            background-color:  #fdcab5;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col25 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col0 {
+            background-color:  #fc8060;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col1 {
+            background-color:  #fc9070;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col2 {
+            background-color:  #fc9373;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col3 {
+            background-color:  #fc8666;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col4 {
+            background-color:  #fc8666;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col5 {
+            background-color:  #fc8565;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col6 {
+            background-color:  #fc997a;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col7 {
+            background-color:  #fc8767;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col8 {
+            background-color:  #fc8767;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col9 {
+            background-color:  #fc8767;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col10 {
+            background-color:  #fb6c4c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col11 {
+            background-color:  #fc8969;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col12 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col13 {
+            background-color:  #fca486;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col14 {
+            background-color:  #f96346;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col15 {
+            background-color:  #fc9777;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col16 {
+            background-color:  #fb7757;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col17 {
+            background-color:  #fc997a;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col18 {
+            background-color:  #fc9b7c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col19 {
+            background-color:  #f85f43;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col20 {
+            background-color:  #fc8060;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col21 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col22 {
+            background-color:  #fc9474;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col23 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col24 {
+            background-color:  #67000d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col25 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col0 {
+            background-color:  #fc9b7c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col1 {
+            background-color:  #fc8262;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col2 {
+            background-color:  #fc8060;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col3 {
+            background-color:  #fc8e6e;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col4 {
+            background-color:  #fc8e6e;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col5 {
+            background-color:  #fc8f6f;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col6 {
+            background-color:  #fb7353;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col7 {
+            background-color:  #fc8e6e;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col8 {
+            background-color:  #fc8d6d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col9 {
+            background-color:  #fc8e6e;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col10 {
+            background-color:  #fcaa8d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col11 {
+            background-color:  #fc8b6b;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col12 {
+            background-color:  #fb7d5d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col13 {
+            background-color:  #fb7151;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col14 {
+            background-color:  #fca98c;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col15 {
+            background-color:  #fb7b5b;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col16 {
+            background-color:  #fca082;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col17 {
+            background-color:  #fb7b5b;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col18 {
+            background-color:  #fc8464;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col19 {
+            background-color:  #fcaa8d;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col20 {
+            background-color:  #fc9373;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col21 {
+            background-color:  #fb7252;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col22 {
+            background-color:  #fcad90;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col23 {
+            background-color:  #fdd5c4;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col24 {
+            background-color:  #fff5f0;
+        }    #T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col25 {
+            background-color:  #67000d;
+        }</style>  
+<table id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855" > 
+<thead>    <tr> 
+        <th class="blank level0" ></th> 
+        <th class="col_heading level0 col0" >Duration</th> 
+        <th class="col_heading level0 col1" >Company_pred_0</th> 
+        <th class="col_heading level0 col2" >State_pred_0</th> 
+        <th class="col_heading level0 col3" >y</th> 
+        <th class="col_heading level0 col4" >Weekday_Fri</th> 
+        <th class="col_heading level0 col5" >Weekday_Mon</th> 
+        <th class="col_heading level0 col6" >Weekday_Sat</th> 
+        <th class="col_heading level0 col7" >Weekday_Thu</th> 
+        <th class="col_heading level0 col8" >Weekday_Tue</th> 
+        <th class="col_heading level0 col9" >Weekday_Wed</th> 
+        <th class="col_heading level0 col10" >Product_Bank account or service</th> 
+        <th class="col_heading level0 col11" >Product_Credit card</th> 
+        <th class="col_heading level0 col12" >Product_Credit reporting</th> 
+        <th class="col_heading level0 col13" >Product_Debt collection</th> 
+        <th class="col_heading level0 col14" >Product_Mortgage</th> 
+        <th class="col_heading level0 col15" >Product_Others</th> 
+        <th class="col_heading level0 col16" >Issue_Account opening, closing, or management</th> 
+        <th class="col_heading level0 col17" >Issue_Cont'd attempts collect debt not owed</th> 
+        <th class="col_heading level0 col18" >Issue_Incorrect information on credit report</th> 
+        <th class="col_heading level0 col19" >Issue_Loan modification,collection,foreclosure</th> 
+        <th class="col_heading level0 col20" >Issue_Loan servicing, payments, escrow account</th> 
+        <th class="col_heading level0 col21" >Issue_Others</th> 
+        <th class="col_heading level0 col22" >Submit_via_Others</th> 
+        <th class="col_heading level0 col23" >Submit_via_Phone</th> 
+        <th class="col_heading level0 col24" >Submit_via_Referral</th> 
+        <th class="col_heading level0 col25" >Submit_via_Web</th> 
+    </tr></thead> 
+<tbody>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row0" class="row_heading level0 row0" >Duration</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col0" class="data row0 col0" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col1" class="data row0 col1" >0.061</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col2" class="data row0 col2" >0.0046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col3" class="data row0 col3" >-0.036</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col4" class="data row0 col4" >-0.0012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col5" class="data row0 col5" >0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col6" class="data row0 col6" >-0.037</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col7" class="data row0 col7" >0.006</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col8" class="data row0 col8" >0.01</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col9" class="data row0 col9" >0.00044</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col10" class="data row0 col10" >-0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col11" class="data row0 col11" >-0.021</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col12" class="data row0 col12" >0.0051</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col13" class="data row0 col13" >0.014</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col14" class="data row0 col14" >0.04</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col15" class="data row0 col15" >-0.0073</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col16" class="data row0 col16" >-0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col17" class="data row0 col17" >0.0082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col18" class="data row0 col18" >0.016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col19" class="data row0 col19" >0.061</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col20" class="data row0 col20" >-0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col21" class="data row0 col21" >-0.046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col22" class="data row0 col22" >0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col23" class="data row0 col23" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col24" class="data row0 col24" >0.053</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row0_col25" class="data row0 col25" >-0.088</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row1" class="row_heading level0 row1" >Company_pred_0</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col0" class="data row1 col0" >0.061</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col1" class="data row1 col1" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col2" class="data row1 col2" >0.034</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col3" class="data row1 col3" >-0.49</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col4" class="data row1 col4" >-0.0018</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col5" class="data row1 col5" >5.9e-05</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col6" class="data row1 col6" >-0.0076</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col7" class="data row1 col7" >0.00082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col8" class="data row1 col8" >0.00079</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col9" class="data row1 col9" >0.007</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col10" class="data row1 col10" >-0.035</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col11" class="data row1 col11" >-0.067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col12" class="data row1 col12" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col13" class="data row1 col13" >0.24</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col14" class="data row1 col14" >-0.022</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col15" class="data row1 col15" >-0.0071</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col16" class="data row1 col16" >-0.022</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col17" class="data row1 col17" >0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col18" class="data row1 col18" >-0.095</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col19" class="data row1 col19" >-0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col20" class="data row1 col20" >-0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col21" class="data row1 col21" >0.0046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col22" class="data row1 col22" >-0.0048</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col23" class="data row1 col23" >0.0078</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col24" class="data row1 col24" >-0.034</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row1_col25" class="data row1 col25" >0.039</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row2" class="row_heading level0 row2" >State_pred_0</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col0" class="data row2 col0" >0.0046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col1" class="data row2 col1" >0.034</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col2" class="data row2 col2" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col3" class="data row2 col3" >-0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col4" class="data row2 col4" >0.00022</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col5" class="data row2 col5" >-0.0051</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col6" class="data row2 col6" >0.0084</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col7" class="data row2 col7" >1.6e-05</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col8" class="data row2 col8" >-0.00039</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col9" class="data row2 col9" >-0.00094</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col10" class="data row2 col10" >-0.04</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col11" class="data row2 col11" >-0.03</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col12" class="data row2 col12" >0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col13" class="data row2 col13" >0.05</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col14" class="data row2 col14" >-0.025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col15" class="data row2 col15" >0.0066</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col16" class="data row2 col16" >-0.023</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col17" class="data row2 col17" >0.025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col18" class="data row2 col18" >0.014</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col19" class="data row2 col19" >-0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col20" class="data row2 col20" >-0.0025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col21" class="data row2 col21" >-0.0032</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col22" class="data row2 col22" >-0.0095</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col23" class="data row2 col23" >-0.013</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col24" class="data row2 col24" >-0.044</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row2_col25" class="data row2 col25" >0.054</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row3" class="row_heading level0 row3" >y</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col0" class="data row3 col0" >-0.036</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col1" class="data row3 col1" >-0.49</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col2" class="data row3 col2" >-0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col3" class="data row3 col3" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col4" class="data row3 col4" >-0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col5" class="data row3 col5" >0.0094</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col6" class="data row3 col6" >-0.0032</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col7" class="data row3 col7" >-0.0016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col8" class="data row3 col8" >0.007</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col9" class="data row3 col9" >0.0035</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col10" class="data row3 col10" >0.0036</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col11" class="data row3 col11" >0.034</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col12" class="data row3 col12" >0.068</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col13" class="data row3 col13" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col14" class="data row3 col14" >0.026</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col15" class="data row3 col15" >-0.0023</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col16" class="data row3 col16" >0.00049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col17" class="data row3 col17" >-0.07</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col18" class="data row3 col18" >0.057</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col19" class="data row3 col19" >0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col20" class="data row3 col20" >0.016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col21" class="data row3 col21" >-0.0065</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col22" class="data row3 col22" >0.0024</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col23" class="data row3 col23" >-0.0058</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col24" class="data row3 col24" >0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row3_col25" class="data row3 col25" >-0.021</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row4" class="row_heading level0 row4" >Weekday_Fri</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col0" class="data row4 col0" >-0.0012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col1" class="data row4 col1" >-0.0018</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col2" class="data row4 col2" >0.00022</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col3" class="data row4 col3" >-0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col4" class="data row4 col4" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col5" class="data row4 col5" >-0.21</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col6" class="data row4 col6" >-0.096</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col7" class="data row4 col7" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col8" class="data row4 col8" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col9" class="data row4 col9" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col10" class="data row4 col10" >0.0067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col11" class="data row4 col11" >-0.0036</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col12" class="data row4 col12" >-0.01</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col13" class="data row4 col13" >-0.0092</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col14" class="data row4 col14" >0.0063</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col15" class="data row4 col15" >0.0033</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col16" class="data row4 col16" >0.0025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col17" class="data row4 col17" >-0.0061</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col18" class="data row4 col18" >-0.0093</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col19" class="data row4 col19" >0.0073</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col20" class="data row4 col20" >0.0011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col21" class="data row4 col21" >0.0035</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col22" class="data row4 col22" >0.00095</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col23" class="data row4 col23" >0.0064</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col24" class="data row4 col24" >0.016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row4_col25" class="data row4 col25" >-0.02</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row5" class="row_heading level0 row5" >Weekday_Mon</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col0" class="data row5 col0" >0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col1" class="data row5 col1" >5.9e-05</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col2" class="data row5 col2" >-0.0051</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col3" class="data row5 col3" >0.0094</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col4" class="data row5 col4" >-0.21</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col5" class="data row5 col5" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col6" class="data row5 col6" >-0.096</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col7" class="data row5 col7" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col8" class="data row5 col8" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col9" class="data row5 col9" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col10" class="data row5 col10" >0.0071</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col11" class="data row5 col11" >0.0019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col12" class="data row5 col12" >-0.00089</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col13" class="data row5 col13" >-0.0043</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col14" class="data row5 col14" >0.0067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col15" class="data row5 col15" >-0.0027</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col16" class="data row5 col16" >0.0063</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col17" class="data row5 col17" >0.00049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col18" class="data row5 col18" >-0.00057</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col19" class="data row5 col19" >0.0045</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col20" class="data row5 col20" >0.0043</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col21" class="data row5 col21" >-0.0073</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col22" class="data row5 col22" >0.0043</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col23" class="data row5 col23" >0.0079</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col24" class="data row5 col24" >0.024</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row5_col25" class="data row5 col25" >-0.027</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row6" class="row_heading level0 row6" >Weekday_Sat</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col0" class="data row6 col0" >-0.037</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col1" class="data row6 col1" >-0.0076</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col2" class="data row6 col2" >0.0084</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col3" class="data row6 col3" >-0.0032</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col4" class="data row6 col4" >-0.096</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col5" class="data row6 col5" >-0.096</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col6" class="data row6 col6" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col7" class="data row6 col7" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col8" class="data row6 col8" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col9" class="data row6 col9" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col10" class="data row6 col10" >-0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col11" class="data row6 col11" >0.0037</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col12" class="data row6 col12" >0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col13" class="data row6 col13" >0.015</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col14" class="data row6 col14" >-0.053</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col15" class="data row6 col15" >0.002</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col16" class="data row6 col16" >-0.01</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col17" class="data row6 col17" >0.014</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col18" class="data row6 col18" >0.0098</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col19" class="data row6 col19" >-0.047</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col20" class="data row6 col20" >-0.015</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col21" class="data row6 col21" >0.029</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col22" class="data row6 col22" >-0.021</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col23" class="data row6 col23" >-0.046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col24" class="data row6 col24" >-0.078</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row6_col25" class="data row6 col25" >0.12</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row7" class="row_heading level0 row7" >Weekday_Thu</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col0" class="data row7 col0" >0.006</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col1" class="data row7 col1" >0.00082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col2" class="data row7 col2" >1.6e-05</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col3" class="data row7 col3" >-0.0016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col4" class="data row7 col4" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col5" class="data row7 col5" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col6" class="data row7 col6" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col7" class="data row7 col7" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col8" class="data row7 col8" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col9" class="data row7 col9" >-0.24</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col10" class="data row7 col10" >0.00063</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col11" class="data row7 col11" >-0.0019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col12" class="data row7 col12" >-0.0038</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col13" class="data row7 col13" >0.0019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col14" class="data row7 col14" >0.0091</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col15" class="data row7 col15" >0.0025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col16" class="data row7 col16" >-0.00062</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col17" class="data row7 col17" >-0.00041</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col18" class="data row7 col18" >-0.00086</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col19" class="data row7 col19" >0.0096</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col20" class="data row7 col20" >0.0018</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col21" class="data row7 col21" >-0.0079</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col22" class="data row7 col22" >0.0037</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col23" class="data row7 col23" >0.0095</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col24" class="data row7 col24" >0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row7_col25" class="data row7 col25" >-0.022</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row8" class="row_heading level0 row8" >Weekday_Tue</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col0" class="data row8 col0" >0.01</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col1" class="data row8 col1" >0.00079</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col2" class="data row8 col2" >-0.00039</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col3" class="data row8 col3" >0.007</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col4" class="data row8 col4" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col5" class="data row8 col5" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col6" class="data row8 col6" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col7" class="data row8 col7" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col8" class="data row8 col8" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col9" class="data row8 col9" >-0.24</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col10" class="data row8 col10" >0.00049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col11" class="data row8 col11" >0.0044</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col12" class="data row8 col12" >-0.00021</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col13" class="data row8 col13" >-0.0062</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col14" class="data row8 col14" >0.014</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col15" class="data row8 col15" >-0.0049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col16" class="data row8 col16" >-0.00019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col17" class="data row8 col17" >-0.0047</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col18" class="data row8 col18" >-0.00059</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col19" class="data row8 col19" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col20" class="data row8 col20" >0.0054</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col21" class="data row8 col21" >-0.0064</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col22" class="data row8 col22" >0.0046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col23" class="data row8 col23" >0.0051</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col24" class="data row8 col24" >0.013</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row8_col25" class="data row8 col25" >-0.016</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row9" class="row_heading level0 row9" >Weekday_Wed</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col0" class="data row9 col0" >0.00044</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col1" class="data row9 col1" >0.007</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col2" class="data row9 col2" >-0.00094</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col3" class="data row9 col3" >0.0035</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col4" class="data row9 col4" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col5" class="data row9 col5" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col6" class="data row9 col6" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col7" class="data row9 col7" >-0.24</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col8" class="data row9 col8" >-0.24</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col9" class="data row9 col9" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col10" class="data row9 col10" >0.0049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col11" class="data row9 col11" >-0.0049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col12" class="data row9 col12" >-0.0053</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col13" class="data row9 col13" >0.00043</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col14" class="data row9 col14" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col15" class="data row9 col15" >0.00029</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col16" class="data row9 col16" >0.0039</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col17" class="data row9 col17" >-0.003</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col18" class="data row9 col18" >-0.0017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col19" class="data row9 col19" >0.01</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col20" class="data row9 col20" >0.00058</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col21" class="data row9 col21" >-0.0054</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col22" class="data row9 col22" >0.0064</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col23" class="data row9 col23" >0.013</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col24" class="data row9 col24" >0.0089</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row9_col25" class="data row9 col25" >-0.023</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row10" class="row_heading level0 row10" >Product_Bank account or service</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col0" class="data row10 col0" >-0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col1" class="data row10 col1" >-0.035</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col2" class="data row10 col2" >-0.04</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col3" class="data row10 col3" >0.0036</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col4" class="data row10 col4" >0.0067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col5" class="data row10 col5" >0.0071</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col6" class="data row10 col6" >-0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col7" class="data row10 col7" >0.00063</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col8" class="data row10 col8" >0.00049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col9" class="data row10 col9" >0.0049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col10" class="data row10 col10" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col11" class="data row10 col11" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col12" class="data row10 col12" >-0.15</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col13" class="data row10 col13" >-0.16</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col14" class="data row10 col14" >-0.2</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col15" class="data row10 col15" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col16" class="data row10 col16" >0.64</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col17" class="data row10 col17" >-0.091</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col18" class="data row10 col18" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col19" class="data row10 col19" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col20" class="data row10 col20" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col21" class="data row10 col21" >0.031</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col22" class="data row10 col22" >0.0012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col23" class="data row10 col23" >0.099</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col24" class="data row10 col24" >0.15</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row10_col25" class="data row10 col25" >-0.16</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row11" class="row_heading level0 row11" >Product_Credit card</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col0" class="data row11 col0" >-0.021</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col1" class="data row11 col1" >-0.067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col2" class="data row11 col2" >-0.03</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col3" class="data row11 col3" >0.034</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col4" class="data row11 col4" >-0.0036</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col5" class="data row11 col5" >0.0019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col6" class="data row11 col6" >0.0037</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col7" class="data row11 col7" >-0.0019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col8" class="data row11 col8" >0.0044</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col9" class="data row11 col9" >-0.0049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col10" class="data row11 col10" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col11" class="data row11 col11" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col12" class="data row11 col12" >-0.15</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col13" class="data row11 col13" >-0.16</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col14" class="data row11 col14" >-0.21</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col15" class="data row11 col15" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col16" class="data row11 col16" >-0.072</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col17" class="data row11 col17" >-0.093</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col18" class="data row11 col18" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col19" class="data row11 col19" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col20" class="data row11 col20" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col21" class="data row11 col21" >0.33</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col22" class="data row11 col22" >-0.0094</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col23" class="data row11 col23" >0.015</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col24" class="data row11 col24" >0.0048</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row11_col25" class="data row11 col25" >-0.0082</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row12" class="row_heading level0 row12" >Product_Credit reporting</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col0" class="data row12 col0" >0.0051</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col1" class="data row12 col1" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col2" class="data row12 col2" >0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col3" class="data row12 col3" >0.068</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col4" class="data row12 col4" >-0.01</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col5" class="data row12 col5" >-0.00089</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col6" class="data row12 col6" >0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col7" class="data row12 col7" >-0.0038</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col8" class="data row12 col8" >-0.00021</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col9" class="data row12 col9" >-0.0053</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col10" class="data row12 col10" >-0.15</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col11" class="data row12 col11" >-0.15</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col12" class="data row12 col12" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col13" class="data row12 col13" >-0.21</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col14" class="data row12 col14" >-0.27</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col15" class="data row12 col15" >-0.16</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col16" class="data row12 col16" >-0.094</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col17" class="data row12 col17" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col18" class="data row12 col18" >0.83</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col19" class="data row12 col19" >-0.17</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col20" class="data row12 col20" >-0.14</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col21" class="data row12 col21" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col22" class="data row12 col22" >0.0058</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col23" class="data row12 col23" >-0.075</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col24" class="data row12 col24" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row12_col25" class="data row12 col25" >0.061</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row13" class="row_heading level0 row13" >Product_Debt collection</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col0" class="data row13 col0" >0.014</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col1" class="data row13 col1" >0.24</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col2" class="data row13 col2" >0.05</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col3" class="data row13 col3" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col4" class="data row13 col4" >-0.0092</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col5" class="data row13 col5" >-0.0043</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col6" class="data row13 col6" >0.015</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col7" class="data row13 col7" >0.0019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col8" class="data row13 col8" >-0.0062</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col9" class="data row13 col9" >0.00043</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col10" class="data row13 col10" >-0.16</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col11" class="data row13 col11" >-0.16</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col12" class="data row13 col12" >-0.21</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col13" class="data row13 col13" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col14" class="data row13 col14" >-0.3</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col15" class="data row13 col15" >-0.18</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col16" class="data row13 col16" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col17" class="data row13 col17" >0.57</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col18" class="data row13 col18" >-0.18</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col19" class="data row13 col19" >-0.19</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col20" class="data row13 col20" >-0.15</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col21" class="data row13 col21" >-0.067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col22" class="data row13 col22" >-0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col23" class="data row13 col23" >0.0047</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col24" class="data row13 col24" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row13_col25" class="data row13 col25" >0.13</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row14" class="row_heading level0 row14" >Product_Mortgage</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col0" class="data row14 col0" >0.04</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col1" class="data row14 col1" >-0.022</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col2" class="data row14 col2" >-0.025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col3" class="data row14 col3" >0.026</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col4" class="data row14 col4" >0.0063</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col5" class="data row14 col5" >0.0067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col6" class="data row14 col6" >-0.053</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col7" class="data row14 col7" >0.0091</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col8" class="data row14 col8" >0.014</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col9" class="data row14 col9" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col10" class="data row14 col10" >-0.2</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col11" class="data row14 col11" >-0.21</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col12" class="data row14 col12" >-0.27</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col13" class="data row14 col13" >-0.3</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col14" class="data row14 col14" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col15" class="data row14 col15" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col16" class="data row14 col16" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col17" class="data row14 col17" >-0.17</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col18" class="data row14 col18" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col19" class="data row14 col19" >0.63</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col20" class="data row14 col20" >0.51</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col21" class="data row14 col21" >-0.38</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col22" class="data row14 col22" >0.04</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col23" class="data row14 col23" >-0.0068</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col24" class="data row14 col24" >0.19</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row14_col25" class="data row14 col25" >-0.16</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row15" class="row_heading level0 row15" >Product_Others</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col0" class="data row15 col0" >-0.0073</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col1" class="data row15 col1" >-0.0071</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col2" class="data row15 col2" >0.0066</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col3" class="data row15 col3" >-0.0023</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col4" class="data row15 col4" >0.0033</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col5" class="data row15 col5" >-0.0027</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col6" class="data row15 col6" >0.002</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col7" class="data row15 col7" >0.0025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col8" class="data row15 col8" >-0.0049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col9" class="data row15 col9" >0.00029</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col10" class="data row15 col10" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col11" class="data row15 col11" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col12" class="data row15 col12" >-0.16</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col13" class="data row15 col13" >-0.18</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col14" class="data row15 col14" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col15" class="data row15 col15" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col16" class="data row15 col16" >-0.079</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col17" class="data row15 col17" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col18" class="data row15 col18" >-0.14</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col19" class="data row15 col19" >-0.14</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col20" class="data row15 col20" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col21" class="data row15 col21" >0.36</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col22" class="data row15 col22" >-0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col23" class="data row15 col23" >0.0082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col24" class="data row15 col24" >-0.069</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row15_col25" class="data row15 col25" >0.08</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row16" class="row_heading level0 row16" >Issue_Account opening, closing, or management</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col0" class="data row16 col0" >-0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col1" class="data row16 col1" >-0.022</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col2" class="data row16 col2" >-0.023</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col3" class="data row16 col3" >0.00049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col4" class="data row16 col4" >0.0025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col5" class="data row16 col5" >0.0063</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col6" class="data row16 col6" >-0.01</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col7" class="data row16 col7" >-0.00062</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col8" class="data row16 col8" >-0.00019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col9" class="data row16 col9" >0.0039</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col10" class="data row16 col10" >0.64</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col11" class="data row16 col11" >-0.072</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col12" class="data row16 col12" >-0.094</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col13" class="data row16 col13" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col14" class="data row16 col14" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col15" class="data row16 col15" >-0.079</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col16" class="data row16 col16" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col17" class="data row16 col17" >-0.058</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col18" class="data row16 col18" >-0.078</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col19" class="data row16 col19" >-0.082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col20" class="data row16 col20" >-0.067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col21" class="data row16 col21" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col22" class="data row16 col22" >0.0046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col23" class="data row16 col23" >0.071</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col24" class="data row16 col24" >0.097</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row16_col25" class="data row16 col25" >-0.11</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row17" class="row_heading level0 row17" >Issue_Cont'd attempts collect debt not owed</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col0" class="data row17 col0" >0.0082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col1" class="data row17 col1" >0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col2" class="data row17 col2" >0.025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col3" class="data row17 col3" >-0.07</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col4" class="data row17 col4" >-0.0061</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col5" class="data row17 col5" >0.00049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col6" class="data row17 col6" >0.014</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col7" class="data row17 col7" >-0.00041</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col8" class="data row17 col8" >-0.0047</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col9" class="data row17 col9" >-0.003</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col10" class="data row17 col10" >-0.091</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col11" class="data row17 col11" >-0.093</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col12" class="data row17 col12" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col13" class="data row17 col13" >0.57</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col14" class="data row17 col14" >-0.17</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col15" class="data row17 col15" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col16" class="data row17 col16" >-0.058</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col17" class="data row17 col17" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col18" class="data row17 col18" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col19" class="data row17 col19" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col20" class="data row17 col20" >-0.086</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col21" class="data row17 col21" >-0.28</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col22" class="data row17 col22" >-0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col23" class="data row17 col23" >0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col24" class="data row17 col24" >-0.081</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row17_col25" class="data row17 col25" >0.078</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row18" class="row_heading level0 row18" >Issue_Incorrect information on credit report</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col0" class="data row18 col0" >0.016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col1" class="data row18 col1" >-0.095</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col2" class="data row18 col2" >0.014</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col3" class="data row18 col3" >0.057</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col4" class="data row18 col4" >-0.0093</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col5" class="data row18 col5" >-0.00057</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col6" class="data row18 col6" >0.0098</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col7" class="data row18 col7" >-0.00086</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col8" class="data row18 col8" >-0.00059</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col9" class="data row18 col9" >-0.0017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col10" class="data row18 col10" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col11" class="data row18 col11" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col12" class="data row18 col12" >0.83</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col13" class="data row18 col13" >-0.18</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col14" class="data row18 col14" >-0.23</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col15" class="data row18 col15" >-0.14</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col16" class="data row18 col16" >-0.078</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col17" class="data row18 col17" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col18" class="data row18 col18" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col19" class="data row18 col19" >-0.14</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col20" class="data row18 col20" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col21" class="data row18 col21" >-0.38</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col22" class="data row18 col22" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col23" class="data row18 col23" >-0.064</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col24" class="data row18 col24" >-0.083</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row18_col25" class="data row18 col25" >0.029</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row19" class="row_heading level0 row19" >Issue_Loan modification,collection,foreclosure</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col0" class="data row19 col0" >0.061</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col1" class="data row19 col1" >-0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col2" class="data row19 col2" >-0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col3" class="data row19 col3" >0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col4" class="data row19 col4" >0.0073</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col5" class="data row19 col5" >0.0045</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col6" class="data row19 col6" >-0.047</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col7" class="data row19 col7" >0.0096</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col8" class="data row19 col8" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col9" class="data row19 col9" >0.01</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col10" class="data row19 col10" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col11" class="data row19 col11" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col12" class="data row19 col12" >-0.17</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col13" class="data row19 col13" >-0.19</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col14" class="data row19 col14" >0.63</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col15" class="data row19 col15" >-0.14</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col16" class="data row19 col16" >-0.082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col17" class="data row19 col17" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col18" class="data row19 col18" >-0.14</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col19" class="data row19 col19" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col20" class="data row19 col20" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col21" class="data row19 col21" >-0.4</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col22" class="data row19 col22" >0.045</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col23" class="data row19 col23" >-0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col24" class="data row19 col24" >0.21</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row19_col25" class="data row19 col25" >-0.17</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row20" class="row_heading level0 row20" >Issue_Loan servicing, payments, escrow account</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col0" class="data row20 col0" >-0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col1" class="data row20 col1" >-0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col2" class="data row20 col2" >-0.0025</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col3" class="data row20 col3" >0.016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col4" class="data row20 col4" >0.0011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col5" class="data row20 col5" >0.0043</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col6" class="data row20 col6" >-0.015</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col7" class="data row20 col7" >0.0018</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col8" class="data row20 col8" >0.0054</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col9" class="data row20 col9" >0.00058</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col10" class="data row20 col10" >-0.1</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col11" class="data row20 col11" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col12" class="data row20 col12" >-0.14</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col13" class="data row20 col13" >-0.15</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col14" class="data row20 col14" >0.51</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col15" class="data row20 col15" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col16" class="data row20 col16" >-0.067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col17" class="data row20 col17" >-0.086</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col18" class="data row20 col18" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col19" class="data row20 col19" >-0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col20" class="data row20 col20" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col21" class="data row20 col21" >-0.32</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col22" class="data row20 col22" >0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col23" class="data row20 col23" >0.013</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col24" class="data row20 col24" >0.049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row20_col25" class="data row20 col25" >-0.044</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row21" class="row_heading level0 row21" >Issue_Others</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col0" class="data row21 col0" >-0.046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col1" class="data row21 col1" >0.0046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col2" class="data row21 col2" >-0.0032</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col3" class="data row21 col3" >-0.0065</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col4" class="data row21 col4" >0.0035</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col5" class="data row21 col5" >-0.0073</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col6" class="data row21 col6" >0.029</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col7" class="data row21 col7" >-0.0079</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col8" class="data row21 col8" >-0.0064</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col9" class="data row21 col9" >-0.0054</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col10" class="data row21 col10" >0.031</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col11" class="data row21 col11" >0.33</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col12" class="data row21 col12" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col13" class="data row21 col13" >-0.067</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col14" class="data row21 col14" >-0.38</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col15" class="data row21 col15" >0.36</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col16" class="data row21 col16" >-0.22</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col17" class="data row21 col17" >-0.28</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col18" class="data row21 col18" >-0.38</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col19" class="data row21 col19" >-0.4</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col20" class="data row21 col20" >-0.32</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col21" class="data row21 col21" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col22" class="data row21 col22" >-0.04</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col23" class="data row21 col23" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col24" class="data row21 col24" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row21_col25" class="data row21 col25" >0.12</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row22" class="row_heading level0 row22" >Submit_via_Others</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col0" class="data row22 col0" >0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col1" class="data row22 col1" >-0.0048</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col2" class="data row22 col2" >-0.0095</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col3" class="data row22 col3" >0.0024</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col4" class="data row22 col4" >0.00095</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col5" class="data row22 col5" >0.0043</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col6" class="data row22 col6" >-0.021</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col7" class="data row22 col7" >0.0037</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col8" class="data row22 col8" >0.0046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col9" class="data row22 col9" >0.0064</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col10" class="data row22 col10" >0.0012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col11" class="data row22 col11" >-0.0094</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col12" class="data row22 col12" >0.0058</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col13" class="data row22 col13" >-0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col14" class="data row22 col14" >0.04</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col15" class="data row22 col15" >-0.017</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col16" class="data row22 col16" >0.0046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col17" class="data row22 col17" >-0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col18" class="data row22 col18" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col19" class="data row22 col19" >0.045</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col20" class="data row22 col20" >0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col21" class="data row22 col21" >-0.04</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col22" class="data row22 col22" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col23" class="data row22 col23" >-0.03</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col24" class="data row22 col24" >-0.051</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row22_col25" class="data row22 col25" >-0.18</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row23" class="row_heading level0 row23" >Submit_via_Phone</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col0" class="data row23 col0" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col1" class="data row23 col1" >0.0078</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col2" class="data row23 col2" >-0.013</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col3" class="data row23 col3" >-0.0058</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col4" class="data row23 col4" >0.0064</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col5" class="data row23 col5" >0.0079</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col6" class="data row23 col6" >-0.046</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col7" class="data row23 col7" >0.0095</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col8" class="data row23 col8" >0.0051</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col9" class="data row23 col9" >0.013</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col10" class="data row23 col10" >0.099</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col11" class="data row23 col11" >0.015</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col12" class="data row23 col12" >-0.075</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col13" class="data row23 col13" >0.0047</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col14" class="data row23 col14" >-0.0068</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col15" class="data row23 col15" >0.0082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col16" class="data row23 col16" >0.071</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col17" class="data row23 col17" >0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col18" class="data row23 col18" >-0.064</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col19" class="data row23 col19" >-0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col20" class="data row23 col20" >0.013</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col21" class="data row23 col21" >0.011</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col22" class="data row23 col22" >-0.03</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col23" class="data row23 col23" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col24" class="data row23 col24" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row23_col25" class="data row23 col25" >-0.4</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row24" class="row_heading level0 row24" >Submit_via_Referral</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col0" class="data row24 col0" >0.053</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col1" class="data row24 col1" >-0.034</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col2" class="data row24 col2" >-0.044</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col3" class="data row24 col3" >0.019</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col4" class="data row24 col4" >0.016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col5" class="data row24 col5" >0.024</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col6" class="data row24 col6" >-0.078</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col7" class="data row24 col7" >0.012</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col8" class="data row24 col8" >0.013</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col9" class="data row24 col9" >0.0089</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col10" class="data row24 col10" >0.15</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col11" class="data row24 col11" >0.0048</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col12" class="data row24 col12" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col13" class="data row24 col13" >-0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col14" class="data row24 col14" >0.19</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col15" class="data row24 col15" >-0.069</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col16" class="data row24 col16" >0.097</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col17" class="data row24 col17" >-0.081</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col18" class="data row24 col18" >-0.083</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col19" class="data row24 col19" >0.21</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col20" class="data row24 col20" >0.049</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col21" class="data row24 col21" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col22" class="data row24 col22" >-0.051</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col23" class="data row24 col23" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col24" class="data row24 col24" >1.0</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row24_col25" class="data row24 col25" >-0.67</td> 
+    </tr>    <tr> 
+        <th id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855level0_row25" class="row_heading level0 row25" >Submit_via_Web</th> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col0" class="data row25 col0" >-0.088</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col1" class="data row25 col1" >0.039</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col2" class="data row25 col2" >0.054</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col3" class="data row25 col3" >-0.021</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col4" class="data row25 col4" >-0.02</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col5" class="data row25 col5" >-0.027</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col6" class="data row25 col6" >0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col7" class="data row25 col7" >-0.022</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col8" class="data row25 col8" >-0.016</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col9" class="data row25 col9" >-0.023</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col10" class="data row25 col10" >-0.16</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col11" class="data row25 col11" >-0.0082</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col12" class="data row25 col12" >0.061</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col13" class="data row25 col13" >0.13</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col14" class="data row25 col14" >-0.16</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col15" class="data row25 col15" >0.08</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col16" class="data row25 col16" >-0.11</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col17" class="data row25 col17" >0.078</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col18" class="data row25 col18" >0.029</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col19" class="data row25 col19" >-0.17</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col20" class="data row25 col20" >-0.044</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col21" class="data row25 col21" >0.12</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col22" class="data row25 col22" >-0.18</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col23" class="data row25 col23" >-0.4</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col24" class="data row25 col24" >-0.67</td> 
+        <td id="T_02a0ecd8_c0eb_11e7_904f_f4b7e2cec855row25_col25" class="data row25 col25" >1.0</td> 
+    </tr></tbody> 
+</table> 
+
+
+
+# Model fitting using Logistic classifiers. 
+
+Define a function to plot confusion matrix.
+
+
+```python
+def plot_confusion_matrix(cm, classes, normalize=True, title='Confusion matrix', cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting 'normalize=True'.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    print("Precision for Class 0 and Class 1 are {:.4f} and {:.4f}".format(cm[0,0], cm[1,1]))
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.4f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+```
+
+Define a function which will help us evaluate models and perform cross-validation
+
+
+```python
+def modelfit(alg, dtrain, predictors, standard=False, weight0='None', performCV=True, cv_folds=4, plot_con_matrix=True,  print_time=True):
+    '''
+    weight0: is an interger. representing the weight for Class 0.
+    '''
+    t1 = time.time()
+    
+    # prepare the datasets
+    X_train, X_test, y_train, y_test = train_test_split(dtrain[predictors], dtrain['y'], random_state=0, stratify=dtrain['y'])
+    print('shape of X_train: {}'.format(X_train.shape))
+    print('shape of y_train: {}'.format(y_train.shape))
+    
+    # standardization
+    if standard:
+        from sklearn.preprocessing import MinMaxScaler
+        scaler = MinMaxScaler()
+        scaler.fit(X_train[['Duration', 'State_pred_0']])
+        X_train[['Duration', 'State_pred_0']] = scaler.transform(X_train[['Duration', 'State_pred_0']])
+        X_test[['Duration', 'State_pred_0']] = scaler.transform(X_test[['Duration', 'State_pred_0']])
+
+    # Fit the algorithm on the data
+    if weight0=='None':
+        alg.fit(X_train, y_train)
+    else:
+        weight = np.where((y_train==0), weight0, 1)
+        print('shape of weight: {}'.format(weight.shape))
+        alg.fit(X_train, y_train, sample_weight=weight)
+    
+    
+    # Predict the test set:
+    dtest_predictions = alg.predict(X_test)
+    dtest_predprob = alg.predict_proba(X_test)[:,1]
+    
+    # Compute confusion matrix
+    cnf_matrix = confusion_matrix(y_test, dtest_predictions)
+    np.set_printoptions(precision=4)
+    
+    # Plot normalized confusion matrix
+    if plot_con_matrix:
+        print("Model Report")
+        plt.figure()
+        class_names = ['Class 0', 'Class 1']
+        plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True, title='Normalized confusion matrix')
+    
+    # Perform cross-validation:
+    if performCV:
+        if weight0=='None':
+            cv_score = cross_validation.cross_val_score(alg, dtrain[predictors], dtrain['y'], 
+                                                        cv=cv_folds, scoring='roc_auc', n_jobs=-1)
+            mean_AUC_score = np.mean(cv_score)
+            print("AUC Score : Mean - {:.4f} | Std - {:.4f} | Min - {:.4f} | Max - {:.4f}".format(
+                np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)))
+        else:
+            cv_score = cross_validation.cross_val_score(alg, dtrain[predictors], dtrain['y'], 
+                                                        cv=cv_folds, scoring='roc_auc', n_jobs=-1, fit_params={'sample_weight':weight})
+            mean_AUC_score = np.mean(cv_score)
+            print("AUC Score : Mean - {:.4f} | Std - {:.4f} | Min - {:.4f} | Max - {:.4f}".format(
+                np.mean(cv_score), np.std(cv_score), np.min(cv_score), np.max(cv_score)))
+        
+    # Ouput time info.
+    if print_time:
+        t2 = time.time()
+        print("Elapsed time is: {:.2f} s.".format(t2-t1))
+    
+    return mean_AUC_score
+```
+
+**Step 1**: Fit a baseline model (before feature selection).
+
+
+```python
+# Prepare data
+train = df2.copy()
+predictors = [x for x in train.columns if x not in ['y']]
+
+# Fit the model
+logit0 = LogisticRegression()
+modelfit(logit0, train, predictors);
+```
+
+    Model Report
+    Normalized confusion matrix:
+    [[ 0.232   0.768 ]
+     [ 0.0029  0.9971]]
+    AUC Score : Mean - 0.8461 | Std - 0.0067 | Min - 0.8368 | Max - 0.8537
+    Elapsed time is: 27.02 s.
+    
+
+
+
+
+    0.85
+
+
+
+
+![png](output_99_2.png)
+
+
+**Step 2**: Select features.
+
+
+```python
+from sklearn.model_selection import StratifiedKFold
+from sklearn.feature_selection import RFECV
+from sklearn.ensemble import RandomForestClassifier
+```
+
+
+```python
+# Create the RFE object and compute a cross-validated score.
+t1 = time.time()
+
+# how to control model complexity for random forest models?
+clf = RandomForestClassifier(n_estimators=50, min_samples_split=20, n_jobs=-1, random_state=42)
+
+# The "accuracy" scoring is proportional to the number of correct classifications
+rfecv = RFECV(estimator=clf, step=1, cv=StratifiedKFold(2), scoring='accuracy')
+rfecv.fit(X, y)
+
+# Plot number of features VS. cross-validation scores
+plt.figure(figsize=(7, 4))
+plt.xlabel("Number of features selected")
+plt.ylabel("Cross validation score \n(nb of correct classifications)")
+plt.plot(range(1, len(rfecv.grid_scores_) + 1), rfecv.grid_scores_, 'o')
+plt.show()
+
+t2 = time.time()
+print("Elapsed time is: {:.2f} s.".format(t2-t1))
+```
+
+
+![png](output_102_0.png)
+
+
+
+
+
+    1621.38
+
+
+
+
+```python
+print("Total number of features: {}".format(X.shape[1]))
+print("Optimal number of features : %d" % rfecv.n_features_)
+```
+
+    Total number of features: 25
+    Optimal number of features : 18
+    
+
+
+```python
+rfecv.ranking_
+```
+
+
+
+
+    array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 1, 1, 1, 2, 8, 1, 3, 6, 7, 1, 5, 1,
+           1, 1])
+
+
+
+
+```python
+col_to_keep = list(X.columns.values[rfecv.ranking_ <= 1])
+print(col_to_keep)
+
+train_sclected = df2[col_to_keep].copy()
+```
+
+    ['Duration', 'Company_pred_0', 'State_pred_0', 'Weekday_Fri', 'Weekday_Mon', 'Weekday_Sat', 'Weekday_Thu', 'Weekday_Tue', 'Weekday_Wed', 'Product_Bank account or service', 'Product_Credit reporting', 'Product_Debt collection', 'Product_Mortgage', "Issue_Cont'd attempts collect debt not owed", 'Issue_Others', 'Submit_via_Phone', 'Submit_via_Referral', 'Submit_via_Web']
+    
+
+
+```python
+# col_to_keep = ['Duration', 'Company_pred_0', 'State_pred_0', 'Weekday_Fri', 'Weekday_Mon', 'Weekday_Sat', 'Weekday_Thu', 'Weekday_Tue', 'Weekday_Wed', 'Product_Bank account or service', 'Product_Credit reporting', 'Product_Debt collection', 'Product_Mortgage', "Issue_Cont'd attempts collect debt not owed", 'Issue_Others', 'Submit_via_Phone', 'Submit_via_Referral', 'Submit_via_Web']
+```
+
+** Step 3:** Re-evaluate the models **based on selected features only**.
+
+
+```python
+# Prepare data
+train = df2.copy()
+col_to_keep = ['Duration', 'Company_pred_0', 'State_pred_0', 'Weekday_Fri', 'Weekday_Mon', 'Weekday_Sat', 'Weekday_Thu', 
+               'Weekday_Tue', 'Weekday_Wed', 'Product_Bank account or service', 'Product_Credit reporting', 
+               'Product_Debt collection', 'Product_Mortgage', "Issue_Cont'd attempts collect debt not owed", 
+               'Issue_Others', 'Submit_via_Phone', 'Submit_via_Referral', 'Submit_via_Web']
+predictors = col_to_keep
+
+# Fit the model
+logit1_selected = LogisticRegression()
+modelfit(logit1_selected, train, predictors);
+```
+
+    Model Report
+    Normalized confusion matrix:
+    [[ 0.2322  0.7678]
+     [ 0.0029  0.9971]]
+    AUC Score : Mean - 0.8520 | Std - 0.0069 | Min - 0.8407 | Max - 0.8589
+    Elapsed time is: 25.09 s.
+    
+
+
+![png](output_108_1.png)
+
+
+The improvements in model performances are **not significant**. The mean AUC score increased from **0.8461** to **0.852** only. So during the next steps, I will keep all features. 
+
+**Step 4**: Adjust the **class_weight** parameter in Logistic model to account for the **imbalanced classes**.
+
+
+```python
+# Prepare data
+train = df2.copy()
+predictors = [x for x in train.columns if x not in ['y']]
+
+# Fit the model
+logit2_weighted = LogisticRegression(class_weight='balanced')
+modelfit(logit2_weighted, train, predictors);
+```
+
+    Model Report
+    Normalized confusion matrix:
+    [[ 0.6444  0.3556]
+     [ 0.0836  0.9164]]
+    AUC Score : Mean - 0.8701 | Std - 0.0083 | Min - 0.8585 | Max - 0.8783
+    Elapsed time is: 41.20 s.
+    
+
+
+![png](output_111_1.png)
+
+
+As shown above, the mean AUC score **increases** from **0.852** in step 3 to **0.8701**. More importantly, the confusion matrix shows that the classificaion precision on class 0 has been **significantly improved** from **0.2322** to **0.6444**. **Conclusion: accounting for imbalanced classes is very important for Logistic model in this case.**
+
+** Step 5**: Standardization.
+
+
+```python
+train.describe()
+```
+
+
+
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Duration</th>
+      <th>Company_pred_0</th>
+      <th>State_pred_0</th>
+      <th>y</th>
+      <th>Weekday_Fri</th>
+      <th>Weekday_Mon</th>
+      <th>Weekday_Sat</th>
+      <th>Weekday_Thu</th>
+      <th>Weekday_Tue</th>
+      <th>Weekday_Wed</th>
+      <th>...</th>
+      <th>Issue_Account opening, closing, or management</th>
+      <th>Issue_Cont'd attempts collect debt not owed</th>
+      <th>Issue_Incorrect information on credit report</th>
+      <th>Issue_Loan modification,collection,foreclosure</th>
+      <th>Issue_Loan servicing, payments, escrow account</th>
+      <th>Issue_Others</th>
+      <th>Submit_via_Others</th>
+      <th>Submit_via_Phone</th>
+      <th>Submit_via_Referral</th>
+      <th>Submit_via_Web</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>count</th>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>8.536160e+05</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>...</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+      <td>853616.000000</td>
+    </tr>
+    <tr>
+      <th>mean</th>
+      <td>3.983278</td>
+      <td>0.026521</td>
+      <td>2.758476e-02</td>
+      <td>0.972276</td>
+      <td>0.172435</td>
+      <td>0.172976</td>
+      <td>0.042470</td>
+      <td>0.185558</td>
+      <td>0.193905</td>
+      <td>0.199593</td>
+      <td>...</td>
+      <td>0.043353</td>
+      <td>0.069965</td>
+      <td>0.118669</td>
+      <td>0.129807</td>
+      <td>0.089349</td>
+      <td>0.513261</td>
+      <td>0.013498</td>
+      <td>0.063242</td>
+      <td>0.160932</td>
+      <td>0.700445</td>
+    </tr>
+    <tr>
+      <th>std</th>
+      <td>16.651121</td>
+      <td>0.082974</td>
+      <td>3.850402e-03</td>
+      <td>0.164182</td>
+      <td>0.377758</td>
+      <td>0.378227</td>
+      <td>0.201659</td>
+      <td>0.388750</td>
+      <td>0.395355</td>
+      <td>0.399695</td>
+      <td>...</td>
+      <td>0.203651</td>
+      <td>0.255088</td>
+      <td>0.323399</td>
+      <td>0.336091</td>
+      <td>0.285247</td>
+      <td>0.499824</td>
+      <td>0.115394</td>
+      <td>0.243397</td>
+      <td>0.367468</td>
+      <td>0.458063</td>
+    </tr>
+    <tr>
+      <th>min</th>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>2.146620e-21</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>...</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>25%</th>
+      <td>0.000000</td>
+      <td>0.001167</td>
+      <td>2.593899e-02</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>...</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>50%</th>
+      <td>0.000000</td>
+      <td>0.006711</td>
+      <td>2.789063e-02</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>...</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <th>75%</th>
+      <td>3.000000</td>
+      <td>0.022212</td>
+      <td>2.989849e-02</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>...</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>1.000000</td>
+    </tr>
+    <tr>
+      <th>max</th>
+      <td>1962.000000</td>
+      <td>1.000000</td>
+      <td>6.089310e-02</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>...</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+      <td>1.000000</td>
+    </tr>
+  </tbody>
+</table>
+<p>8 rows × 26 columns</p>
+</div>
+
+
+
+As shown below, the variables **'Duration'** and **'State_pred_0'** are not distributed between 0 and 1.
+
+
+```python
+# Fit the model using standardized data
+logit3_standard = LogisticRegression(class_weight='balanced')
+modelfit(logit3_standard, train, predictors, standard=True);
+```
+
+    Model Report
+    Normalized confusion matrix:
+    [[ 0.6463  0.3537]
+     [ 0.0847  0.9153]]
+    AUC Score : Mean - 0.8701 | Std - 0.0083 | Min - 0.8585 | Max - 0.8783
+    Elapsed time is: 37.22 s.
+    
+
+
+![png](output_116_1.png)
+
+
+As shown above, the mean AUC score remain unchanged after standardization. However, the TNR rate for Class 0 slightly increases from **0.6444** to **0.6463**. 
+
+# Improve model performance using Gradient Boosting Machines (GBM)
+
+
+```python
+from sklearn.ensemble import GradientBoostingClassifier  # GBM algorithm
+from sklearn import cross_validation, metrics            # Additional scklearn functions
+from sklearn.grid_search import GridSearchCV             # Perforing grid search
+from matplotlib.pylab import rcParams
+rcParams['figure.figsize'] = 9, 3.5
+```
+
+Prepare the dataset.
+
+
+```python
+predictors = [x for x in df2.columns if x not in ['y']]
+train = df2.copy()
+```
+
+Define a function to facilitate tunning parameters in GBMs.
+
+
+```python
+def bgm_modelfit(alg, dtrain, predictors, weight0='None', plot_con_matrix=True,  print_time=True):
+    '''
+    weight0: is an interger. representing the weight for Class 0.
+    '''
+    t1 = time.time()
+    
+    # prepare the datasets
+    X_train, X_test, y_train, y_test = train_test_split(dtrain[predictors], dtrain['y'], random_state=0, stratify=dtrain['y'])
+
+    # Fit the algorithm on the data
+    if weight0=='None':
+        alg.fit(X_train, y_train)
+    else:
+        weight = np.where((y_train==0), weight0, 1)
+        alg.fit(X_train, y_train, sample_weight=weight)
+    
+    
+    # Predict the test set:
+    dtest_predictions = alg.predict(X_test)
+    dtest_predprob = alg.predict_proba(X_test)[:,1]
+    
+    # Compute confusion matrix
+    cnf_matrix = confusion_matrix(y_test, dtest_predictions)
+    np.set_printoptions(precision=4)
+
+    
+    # Plot normalized confusion matrix
+    if plot_con_matrix:
+        plt.figure()
+        class_names = ['Class 0', 'Class 1']
+        plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True, title='Normalized confusion matrix')
+    else:
+        cnf_matrix = cnf_matrix.astype('float') / cnf_matrix.sum(axis=1)[:, np.newaxis]
+        print("Precision for Class 0 and Class 1 are {:.4f} and {:.4f}".format(cnf_matrix[0,0], cnf_matrix[1,1]))
+    
+    # compute and print AUC score
+    AUC_score = metrics.roc_auc_score(y_test, dtest_predprob)
+    print("AUC Score : %f" % AUC_score)
+        
+    # Ouput time info.
+    if print_time:
+        t2 = time.time()
+        print("Elapsed time is: {:.2f} s.\n".format(t2-t1))
+    
+    return AUC_score
+```
+
+## Creating a baseline model 
+
+### Without considering sample weight
+
+
+```python
+gbm0 = GradientBoostingClassifier(learning_rate=0.1, random_state=10)
+print("Model Report for baselie GBM model :")
+AUC_score = bgm_modelfit(gbm0, train, predictors, weight0=1, plot_con_matrix=True, print_time=False)
+```
+
+    Model Report for baselie GBM model :
+    Precision for Class 0 and Class 1 are 0.2178 and 0.9978
+    AUC Score : 0.907908
+    
+
+
+![png](output_126_1.png)
+
+
+The AUC score of the base GBM model is **0.9079** and is higher than the best Logistic model (AUC score is **0.8701**). However, the confusion matrix shows that precision rate for Class 0 in the base GBM (only **0.2178**) is much lower than the Logistic model (which is 0.6463). For comparison, I will introduce **sample weights** in the next step.
+
+### Considering sample weight
+
+
+```python
+gbm1 = GradientBoostingClassifier(learning_rate=0.1, random_state=10)
+print("Model Report for baselie GBM model (accounting for sample weight):")
+AUC_score = bgm_modelfit(gbm1, train, predictors, weight0=37, plot_con_matrix=True, print_time=False);
+```
+
+    Model Report for baselie GBM model (accounting for sample weight):
+    Precision for Class 0 and Class 1 are 0.8154 and 0.8511
+    AUC Score : 0.912957
+    
+
+
+![png](output_129_1.png)
+
+
+**Findings:**
+1. The TNR for the test dataset drastically increases to 0.8154. Therefore, accounting for sample weights will increase model performance.
+2. Since the traning score (0.8489) is slightly lower than the test socre (0.8501), so using a lower weight might yield better results. 
+3. We can expect that the model performance will be further improved after parameter tunning.
+
+### Adjusting sample weights for class0
+
+
+```python
+weights0_vals = [1000, 500, 200, 150, 100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 5, 1]
+AUC_scores = []
+
+gbm2_searchweight = GradientBoostingClassifier(learning_rate=0.1, random_state=10)
+for w in weights0_vals:
+    print("Model Report for baselie GBM model (adjusting parameter {} = {}) :".format('Weight Class 0', w))
+    AUC_score = bgm_modelfit(gbm2_searchweight, train, predictors, weight0=w, print_time=False, plot_con_matrix=False)
+    AUC_scores.append(AUC_score)
+```
+
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 1000) :
+    Precision for Class 0 and Class 1 are 0.9980 and 0.2513
+    AUC Score : 0.908325
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 500) :
+    Precision for Class 0 and Class 1 are 0.9927 and 0.3219
+    AUC Score : 0.909087
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 200) :
+    Precision for Class 0 and Class 1 are 0.9755 and 0.4943
+    AUC Score : 0.911110
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 150) :
+    Precision for Class 0 and Class 1 are 0.9692 and 0.5304
+    AUC Score : 0.910829
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 100) :
+    Precision for Class 0 and Class 1 are 0.9454 and 0.6223
+    AUC Score : 0.911321
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 90) :
+    Precision for Class 0 and Class 1 are 0.9378 and 0.6480
+    AUC Score : 0.911641
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 80) :
+    Precision for Class 0 and Class 1 are 0.9305 and 0.6677
+    AUC Score : 0.911768
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 70) :
+    Precision for Class 0 and Class 1 are 0.9153 and 0.6986
+    AUC Score : 0.911412
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 60) :
+    Precision for Class 0 and Class 1 are 0.8942 and 0.7500
+    AUC Score : 0.913415
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 50) :
+    Precision for Class 0 and Class 1 are 0.8727 and 0.7846
+    AUC Score : 0.912726
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 40) :
+    Precision for Class 0 and Class 1 are 0.8261 and 0.8396
+    AUC Score : 0.912782
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 30) :
+    Precision for Class 0 and Class 1 are 0.7803 and 0.8781
+    AUC Score : 0.912607
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 20) :
+    Precision for Class 0 and Class 1 are 0.7353 and 0.9028
+    AUC Score : 0.912381
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 10) :
+    Precision for Class 0 and Class 1 are 0.5817 and 0.9556
+    AUC Score : 0.911798
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 5) :
+    Precision for Class 0 and Class 1 are 0.4524 and 0.9801
+    AUC Score : 0.911981
+    Model Report for baselie GBM model (adjusting parameter Weight Class 0 = 1) :
+    Precision for Class 0 and Class 1 are 0.2178 and 0.9978
+    AUC Score : 0.907908
+    
+
+
+```python
+plt.plot(weights0_vals, AUC_scores, 'o-', label="GBMs")
+plt.xlabel('Weight for Class 0')
+plt.ylabel('AUC Score');
+```
+
+
+![png](output_133_0.png)
+
+
+The AUC scores in the GBM models are higher than the best Logistic regression model fitted previously (AUC score = 0.8701). The classification accuracy for Class 0 increases as its weight increases (correspondingly, the classification accuracy for Class 1 decreases). For comparison purposes, I will set the weight for Class 0 as 20 (i.e., **weight0=20**). By doing so, the classification accuracy for Class 0 and Class 1 are **0.7353** and **0.9028** and is comparable to the Logistic Regression model (**0.6463** and **0.9153**). This model will be used as the base GBM model.
+
+## General parameter tunning strategy.
+1. Choose a relatively **high learning rate**. Generally the default value of 0.1 works but somewhere between 0.05 to 0.3 should work for different problems
+2. Determine the **optimum number of trees for this learning rate**. This could range around 30-300. Depends on system configurations. This is because it will be used for testing various scenarios and determining the tree parameters.
+3. **Tune tree-specific parameters** for decided learning rate and number of trees. 
+4. **Lower the learning rate** and increase the estimators proportionally to get more robust models.
+
+## Fix learning rate and number of estimators for tuning tree-based parameters.
+1. **min_samples_split = 500** : This should be ~0.5-1% of total values. Since this is imbalanced class problem, I'll take a much smaller value.
+2. **min_samples_leaf = 100** : Can be selected based on intuition. This is just used for preventing overfitting and again a small value because of imbalanced classes.
+3. **max_depth = 8** : Should be chosen (5-8) based on the number of observations and predictors. This has 853K rows and 25 columns so lets take 8 here.
+4. **max_features = ‘sqrt’** : Its a general thumb-rule to start with square root.
+5. **subsample = 0.8** : This is a commonly used used start value.
+6. **learning_rate=0.1**: This is the default value.
+
+### Tune parameter 'n_estimators' from 30 to 300 in steps of 30.
+
+
+```python
+no_of_trees = range(30,401,30)
+AUC_scores = []
+
+for n_estimator in no_of_trees:
+    print("Model Report for parameter {} = {} :".format('n_estimators', n_estimator))
+    gbm_search3 = GradientBoostingClassifier(learning_rate=0.1, random_state=10, 
+                                             n_estimators=n_estimator, min_samples_split=500, min_samples_leaf=100, 
+                                             max_depth=8, max_features='sqrt', subsample=0.8)
+    AUC_score = bgm_modelfit(gbm_search3, train, predictors, weight0=20, print_time=False, plot_con_matrix=False)
+    AUC_scores.append(AUC_score)
+```
+
+    Model Report for parameter n_estimators = 30 :
+    Precision for Class 0 and Class 1 are 0.7232 and 0.9076
+    AUC Score : 0.910923
+    Model Report for parameter n_estimators = 60 :
+    Precision for Class 0 and Class 1 are 0.7318 and 0.9075
+    AUC Score : 0.914343
+    Model Report for parameter n_estimators = 90 :
+    Precision for Class 0 and Class 1 are 0.7399 and 0.9071
+    AUC Score : 0.916124
+    Model Report for parameter n_estimators = 120 :
+    Precision for Class 0 and Class 1 are 0.7429 and 0.9070
+    AUC Score : 0.917319
+    Model Report for parameter n_estimators = 150 :
+    Precision for Class 0 and Class 1 are 0.7413 and 0.9076
+    AUC Score : 0.918147
+    Model Report for parameter n_estimators = 180 :
+    Precision for Class 0 and Class 1 are 0.7409 and 0.9086
+    AUC Score : 0.918171
+    Model Report for parameter n_estimators = 210 :
+    Precision for Class 0 and Class 1 are 0.7396 and 0.9092
+    AUC Score : 0.918042
+    Model Report for parameter n_estimators = 240 :
+    Precision for Class 0 and Class 1 are 0.7397 and 0.9090
+    AUC Score : 0.918055
+    Model Report for parameter n_estimators = 270 :
+    Precision for Class 0 and Class 1 are 0.7379 and 0.9095
+    AUC Score : 0.917794
+    Model Report for parameter n_estimators = 300 :
+    Precision for Class 0 and Class 1 are 0.7372 and 0.9099
+    AUC Score : 0.917351
+    Model Report for parameter n_estimators = 330 :
+    Precision for Class 0 and Class 1 are 0.7345 and 0.9104
+    AUC Score : 0.917000
+    Model Report for parameter n_estimators = 360 :
+    Precision for Class 0 and Class 1 are 0.7306 and 0.9109
+    AUC Score : 0.916668
+    Model Report for parameter n_estimators = 390 :
+    Precision for Class 0 and Class 1 are 0.7298 and 0.9116
+    AUC Score : 0.916312
+    
+
+
+```python
+plt.plot(no_of_trees, AUC_scores, 'o-')
+plt.xlabel('n_estimators')
+plt.ylabel('AUC Score');
+```
+
+
+![png](output_139_0.png)
+
+
+Based on the model output, I will use **'n_estimators'=180** for now.
+
+### Tune **max_depth* and *num_samples_split**. 
+1. **max_depth**: from 3 to 13 in steps of 2.
+2. **min_samples_split**: from 200 to 1000 in steps of 200.
+
+
+```python
+num_samples_splits = range(200,1001,200)
+max_depths = range(3,14,2)
+
+fig, axes = plt.subplots(1, 5, figsize=(20, 3.5))
+for i, n_samples_split in enumerate(num_samples_splits):
+    AUC_scores = []
+    for m_depth in max_depths:
+        print("Model Report for parameter {} = {}, {} = {} :".format('min_samples_split', n_samples_split, 'max_depths', m_depth))
+        gbm_search4 = GradientBoostingClassifier(learning_rate=0.1, random_state=10, 
+                                                 n_estimators=180, min_samples_split=n_samples_split, min_samples_leaf=100, 
+                                                 max_depth=m_depth, max_features='sqrt', subsample=0.8)
+        AUC_score = bgm_modelfit(gbm_search4, train, predictors, weight0=20, print_time=False, plot_con_matrix=False)
+        AUC_scores.append(AUC_score)
+        
+    axes[i].plot(max_depths, AUC_scores, 'o-')
+    axes[i].set_xlabel('max_depths')
+    axes[i].set_ylabel('AUC Score')
+    title_name = 'num_samples_splits=' + str(n_samples_split)
+    axes[i].set_title(title_name);
+```
+
+    Model Report for parameter num_samples_splits = 200, max_depths = 3 :
+    Precision for Class 0 and Class 1 are 0.7137 and 0.9094
+    AUC Score : 0.907831
+    Model Report for parameter num_samples_splits = 200, max_depths = 5 :
+    Precision for Class 0 and Class 1 are 0.7367 and 0.9051
+    AUC Score : 0.915751
+    Model Report for parameter num_samples_splits = 200, max_depths = 7 :
+    Precision for Class 0 and Class 1 are 0.7413 and 0.9066
+    AUC Score : 0.917267
+    Model Report for parameter num_samples_splits = 200, max_depths = 9 :
+    Precision for Class 0 and Class 1 are 0.7291 and 0.9102
+    AUC Score : 0.916031
+    Model Report for parameter num_samples_splits = 200, max_depths = 11 :
+    Precision for Class 0 and Class 1 are 0.7130 and 0.9158
+    AUC Score : 0.912628
+    Model Report for parameter num_samples_splits = 200, max_depths = 13 :
+    Precision for Class 0 and Class 1 are 0.6916 and 0.9212
+    AUC Score : 0.909359
+    Model Report for parameter num_samples_splits = 400, max_depths = 3 :
+    Precision for Class 0 and Class 1 are 0.7137 and 0.9097
+    AUC Score : 0.907569
+    Model Report for parameter num_samples_splits = 400, max_depths = 5 :
+    Precision for Class 0 and Class 1 are 0.7365 and 0.9070
+    AUC Score : 0.915628
+    Model Report for parameter num_samples_splits = 400, max_depths = 7 :
+    Precision for Class 0 and Class 1 are 0.7426 and 0.9066
+    AUC Score : 0.918046
+    Model Report for parameter num_samples_splits = 400, max_depths = 9 :
+    Precision for Class 0 and Class 1 are 0.7296 and 0.9113
+    AUC Score : 0.915709
+    Model Report for parameter num_samples_splits = 400, max_depths = 11 :
+    Precision for Class 0 and Class 1 are 0.7249 and 0.9144
+    AUC Score : 0.913779
+    Model Report for parameter num_samples_splits = 400, max_depths = 13 :
+    Precision for Class 0 and Class 1 are 0.7024 and 0.9191
+    AUC Score : 0.910562
+    Model Report for parameter num_samples_splits = 600, max_depths = 3 :
+    Precision for Class 0 and Class 1 are 0.7140 and 0.9094
+    AUC Score : 0.907463
+    Model Report for parameter num_samples_splits = 600, max_depths = 5 :
+    Precision for Class 0 and Class 1 are 0.7379 and 0.9069
+    AUC Score : 0.916034
+    Model Report for parameter num_samples_splits = 600, max_depths = 7 :
+    Precision for Class 0 and Class 1 are 0.7423 and 0.9064
+    AUC Score : 0.918287
+    Model Report for parameter num_samples_splits = 600, max_depths = 9 :
+    Precision for Class 0 and Class 1 are 0.7343 and 0.9100
+    AUC Score : 0.916762
+    Model Report for parameter num_samples_splits = 600, max_depths = 11 :
+    Precision for Class 0 and Class 1 are 0.7218 and 0.9127
+    AUC Score : 0.913994
+    Model Report for parameter num_samples_splits = 600, max_depths = 13 :
+    Precision for Class 0 and Class 1 are 0.7103 and 0.9165
+    AUC Score : 0.910933
+    Model Report for parameter num_samples_splits = 800, max_depths = 3 :
+    Precision for Class 0 and Class 1 are 0.7113 and 0.9094
+    AUC Score : 0.906684
+    Model Report for parameter num_samples_splits = 800, max_depths = 5 :
+    Precision for Class 0 and Class 1 are 0.7348 and 0.9056
+    AUC Score : 0.914983
+    Model Report for parameter num_samples_splits = 800, max_depths = 7 :
+    Precision for Class 0 and Class 1 are 0.7456 and 0.9060
+    AUC Score : 0.918087
+    Model Report for parameter num_samples_splits = 800, max_depths = 9 :
+    Precision for Class 0 and Class 1 are 0.7387 and 0.9087
+    AUC Score : 0.917499
+    Model Report for parameter num_samples_splits = 800, max_depths = 11 :
+    Precision for Class 0 and Class 1 are 0.7296 and 0.9108
+    AUC Score : 0.914519
+    Model Report for parameter num_samples_splits = 800, max_depths = 13 :
+    Precision for Class 0 and Class 1 are 0.7146 and 0.9144
+    AUC Score : 0.912088
+    Model Report for parameter num_samples_splits = 1000, max_depths = 3 :
+    Precision for Class 0 and Class 1 are 0.7108 and 0.9097
+    AUC Score : 0.906866
+    Model Report for parameter num_samples_splits = 1000, max_depths = 5 :
+    Precision for Class 0 and Class 1 are 0.7357 and 0.9061
+    AUC Score : 0.915788
+    Model Report for parameter num_samples_splits = 1000, max_depths = 7 :
+    Precision for Class 0 and Class 1 are 0.7468 and 0.9060
+    AUC Score : 0.918461
+    Model Report for parameter num_samples_splits = 1000, max_depths = 9 :
+    Precision for Class 0 and Class 1 are 0.7414 and 0.9076
+    AUC Score : 0.917992
+    Model Report for parameter num_samples_splits = 1000, max_depths = 11 :
+    Precision for Class 0 and Class 1 are 0.7296 and 0.9111
+    AUC Score : 0.915715
+    Model Report for parameter num_samples_splits = 1000, max_depths = 13 :
+    Precision for Class 0 and Class 1 are 0.7193 and 0.9134
+    AUC Score : 0.913431
+    
+
+
+![png](output_142_1.png)
+
+
+As one can see in the above figures, the AUC socre achieves the highest value when **'max_depths'=7**. <br>
+The impact of using different values for **'num_samples_splits'** is marginal: 
+> When num_samples_splits =  200, max_depths = 7, precision for Class 0 and Class 1 are 0.7413 and 0.9066, AUC Score : 0.917267<br>
+> When num_samples_splits =  400, max_depths = 7, precision for Class 0 and Class 1 are 0.7426 and 0.9066, AUC Score : 0.918046<br>
+> When num_samples_splits =  600, max_depths = 7, precision for Class 0 and Class 1 are 0.7423 and 0.9064, AUC Score : 0.918287<br>
+> When num_samples_splits =  800, max_depths = 7, precision for Class 0 and Class 1 are 0.7456 and 0.9060, AUC Score : 0.918087<br>
+> When num_samples_splits = 1000, max_depths = 7, precision for Class 0 and Class 1 are 0.7468 and 0.9060, AUC Score : 0.918461<br>
+
+Also, the AUC score and the precision rate for Class 0 achieve the highest when **num_samples_splits = 1000**, so I will test a greater range of values for **num_samples_splits** in the next step.
+
+
+```python
+num_samples_splits = range(200,2001,200)
+AUC_scores = []
+
+for n_samples_split in num_samples_splits:
+    print("Model Report for parameter {} = {} :".format('num_samples_splits', n_samples_split))
+    gbm_search4 = GradientBoostingClassifier(learning_rate=0.1, random_state=10, 
+                                             n_estimators=180, min_samples_split=n_samples_split, min_samples_leaf=100, 
+                                             max_depth=7, max_features='sqrt', subsample=0.8)
+    AUC_score = bgm_modelfit(gbm_search4, train, predictors, weight0=20, print_time=False, plot_con_matrix=False)
+    AUC_scores.append(AUC_score)
+```
+
+
+```python
+Class0_accu = [0.7413, 0.7426, 0.7423, 0.7456, 0.7468, 0.7429, 0.7456, 0.7458, 0.7456, 0.7433]
+Class1_accu = [0.9066, 0.9066, 0.9064, 0.9060, 0.9060, 0.9055, 0.9050, 0.9047, 0.9046, 0.9057]
+
+fig, axes = plt.subplots(1,3,figsize=(12, 3.5))
+axes[0].plot(num_samples_splits, AUC_scores, 'o-')
+axes[0].set_xlabel('min_samples_split')
+axes[0].set_ylabel('AUC Score');
+
+axes[1].plot(num_samples_splits, Class0_accu, 'o-')
+axes[1].set_xlabel('min_samples_split')
+axes[1].set_ylabel('Class 0 Accuracy');
+
+axes[2].plot(num_samples_splits, Class1_accu, 'o-')
+axes[2].set_xlabel('min_samples_split')
+axes[2].set_ylabel('Class 1 Accuracy');
+fig.tight_layout()
+```
+
+
+![png](output_145_0.png)
+
+
+I will choose **min_samples_split=1000** for now. This is because:
+1. It corresponds with the highest AUC score in this case.
+2. The classification accuracy for Class 0 reaches the highest value when min_samples_split=1000.
+3. The classification accuracy for Class 1 is relatively good.
+
+### Tune ‘min_samples_leaf’ based on the following values: 10, 20, 50, 100, 200, 500.
+
+
+```python
+min_samples_leafs = [10, 20, 50, 100, 200, 500]
+AUC_scores = []
+
+for m_leafs in min_samples_leafs:
+    print("Model Report for parameter {} = {} :".format('min_samples_leafs', m_leafs))
+    gbm_search5 = GradientBoostingClassifier(learning_rate=0.1, random_state=10, 
+                                             n_estimators=180, min_samples_split=1000, min_samples_leaf=m_leafs, 
+                                             max_depth=7, max_features='sqrt', subsample=0.8)
+    AUC_score = bgm_modelfit(gbm_search5, train, predictors, weight0=20, print_time=False, plot_con_matrix=False)
+    AUC_scores.append(AUC_score)
+    
+plt.plot(min_samples_leafs, AUC_scores, 'o-')
+plt.xlabel('min_samples_leafs')
+plt.ylabel('AUC Score');
+```
+
+    Model Report for parameter min_samples_leafs = 10 :
+    Precision for Class 0 and Class 1 are 0.7455 and 0.9063
+    AUC Score : 0.918092
+    Model Report for parameter min_samples_leafs = 20 :
+    Precision for Class 0 and Class 1 are 0.7445 and 0.9064
+    AUC Score : 0.918070
+    Model Report for parameter min_samples_leafs = 50 :
+    Precision for Class 0 and Class 1 are 0.7406 and 0.9069
+    AUC Score : 0.918106
+    Model Report for parameter min_samples_leafs = 100 :
+    Precision for Class 0 and Class 1 are 0.7468 and 0.9060
+    AUC Score : 0.918461
+    Model Report for parameter min_samples_leafs = 200 :
+    Precision for Class 0 and Class 1 are 0.7472 and 0.9050
+    AUC Score : 0.917873
+    Model Report for parameter min_samples_leafs = 500 :
+    Precision for Class 0 and Class 1 are 0.7502 and 0.9045
+    AUC Score : 0.918129
+    
+
+
+![png](output_148_1.png)
+
+
+Here I will set the optimum value for min_samples_leaf as 100.
+
+### Tune the last tree-parameters, i.e. max_features by trying 6 values from 1 to 15 in steps of 2.
+
+
+```python
+max_features = range(1,16,2)
+AUC_scores = []
+
+for m_feature in max_features:
+    print("Model Report for parameter {} = {} :".format('max_features', m_feature))
+    gbm_search6 = GradientBoostingClassifier(learning_rate=0.1, random_state=10, 
+                                             n_estimators=180, min_samples_split=1000, min_samples_leaf=100, 
+                                             max_depth=7, max_features=m_feature, subsample=0.8)
+    AUC_score = bgm_modelfit(gbm_search6, train, predictors, weight0=20, print_time=False, plot_con_matrix=False)
+    AUC_scores.append(AUC_score)
+    
+plt.plot(max_features, AUC_scores, 'o-')
+plt.xlabel('max_features')
+plt.ylabel('AUC Score');
+```
+
+    Model Report for parameter max_features = 1 :
+    Precision for Class 0 and Class 1 are 0.7269 and 0.9061
+    AUC Score : 0.909455
+    Model Report for parameter max_features = 3 :
+    Precision for Class 0 and Class 1 are 0.7336 and 0.9071
+    AUC Score : 0.914892
+    Model Report for parameter max_features = 5 :
+    Precision for Class 0 and Class 1 are 0.7468 and 0.9060
+    AUC Score : 0.918461
+    Model Report for parameter max_features = 7 :
+    Precision for Class 0 and Class 1 are 0.7473 and 0.9057
+    AUC Score : 0.920346
+    Model Report for parameter max_features = 9 :
+    Precision for Class 0 and Class 1 are 0.7533 and 0.9060
+    AUC Score : 0.920981
+    Model Report for parameter max_features = 11 :
+    Precision for Class 0 and Class 1 are 0.7548 and 0.9050
+    AUC Score : 0.921454
+    Model Report for parameter max_features = 13 :
+    Precision for Class 0 and Class 1 are 0.7544 and 0.9056
+    AUC Score : 0.922082
+    Model Report for parameter max_features = 15 :
+    Precision for Class 0 and Class 1 are 0.7573 and 0.9052
+    AUC Score : 0.922337
+    
+
+
+![png](output_151_1.png)
+
+
+I will set **max_features = 9** for now. With this we have the final tree-parameters as:
+	* min_samples_split: 1000
+	* min_samples_leaf: 100
+	* max_depth: 7
+	* max_features: 9
+
+### Tuning subsample rate.
+
+
+```python
+subsample_rates = np.arange(0.6,0.9,0.05)
+AUC_scores = []
+
+for s_sample in subsample_rates:
+    print("Model Report for parameter {} = {} :".format('subsample_rates', s_sample))
+    gbm_search7 = GradientBoostingClassifier(learning_rate=0.1, random_state=10, 
+                                             n_estimators=180, min_samples_split=1000, min_samples_leaf=100, 
+                                             max_depth=7, max_features=9, subsample=s_sample)
+    AUC_score = bgm_modelfit(gbm_search7, train, predictors, weight0=20, print_time=False, plot_con_matrix=False)
+    AUC_scores.append(AUC_score)
+    
+plt.plot(subsample_rates, AUC_scores, 'o-')
+plt.xlabel('subsample_rates')
+plt.ylabel('AUC Score');
+```
+
+    Model Report for parameter subsample_rates = 0.6 :
+    Precision for Class 0 and Class 1 are 0.7536 and 0.9054
+    AUC Score : 0.921036
+    Model Report for parameter subsample_rates = 0.65 :
+    Precision for Class 0 and Class 1 are 0.7527 and 0.9067
+    AUC Score : 0.920293
+    Model Report for parameter subsample_rates = 0.7000000000000001 :
+    Precision for Class 0 and Class 1 are 0.7521 and 0.9059
+    AUC Score : 0.920885
+    Model Report for parameter subsample_rates = 0.7500000000000001 :
+    Precision for Class 0 and Class 1 are 0.7546 and 0.9066
+    AUC Score : 0.921284
+    Model Report for parameter subsample_rates = 0.8000000000000002 :
+    Precision for Class 0 and Class 1 are 0.7533 and 0.9060
+    AUC Score : 0.920981
+    Model Report for parameter subsample_rates = 0.8500000000000002 :
+    Precision for Class 0 and Class 1 are 0.7539 and 0.9067
+    AUC Score : 0.921666
+    Model Report for parameter subsample_rates = 0.9000000000000002 :
+    Precision for Class 0 and Class 1 are 0.7538 and 0.9059
+    AUC Score : 0.921437
+    
+
+
+![png](output_154_1.png)
+
+
+Here, I found **0.85** as the optimum value.
+
+### lower the learning rate and increase the number of estimators proportionally.
+
+
+```python
+learn_rate_n_estimator = [(0.05, 360), (0.01, 1800), (0.005, 3600)]
+AUC_scores = []
+
+for learn_rate, n_estimator in learn_rate_n_estimator:
+    print("Model Report for parameter {} = {}, {} = {} :".format('learning_rate', learn_rate, 'n_estimators', n_estimator))
+    gbm_search8 = GradientBoostingClassifier(learning_rate=learn_rate, random_state=10, 
+                                             n_estimators=n_estimator, min_samples_split=1000, min_samples_leaf=100, 
+                                             max_depth=7, max_features=9, subsample=s_sample)
+    AUC_score = bgm_modelfit(gbm_search8, train, predictors, weight0=20, print_time=True, plot_con_matrix=False)
+    AUC_scores.append(AUC_score)
+    
+# plt.plot(subsample_rates, AUC_scores, 'o-')
+# plt.xlabel('subsample_rates')
+# plt.ylabel('AUC Score');
+```
+
+    Model Report for parameter learning_rate = 0.05, n_estimators = 360 :
+    Precision for Class 0 and Class 1 are 0.7541 and 0.9057
+    AUC Score : 0.921346
+    Elapsed time is: 566.26 s.
+    
+    Model Report for parameter learning_rate = 0.01, n_estimators = 1800 :
+    Precision for Class 0 and Class 1 are 0.7539 and 0.9062
+    AUC Score : 0.921931
+    Elapsed time is: 2870.56 s.
+    
+    Model Report for parameter learning_rate = 0.005, n_estimators = 3600 :
+    Precision for Class 0 and Class 1 are 0.7541 and 0.9063
+    AUC Score : 0.921945
+    Elapsed time is: 5721.00 s.
+    
+    
+
+Due to time constraints, I will choose the default **learning_rate = 0.1, n_estimators = 180**. Under these parameters, the AUC score is 0.9217; classification precision for Class 0 and Class 1 are 0.7539 and 0.9067, repectively.
+
+
+##### THE END.
+
+
+```python
+
+```
+
+
+```python
+
+```
+
+
+```python
+
+```
+
+
+```python
+
+```
+
+
+```python
+
+```
+
+
+```python
+
+```
+
+
+```python
+
+```
+
+
+```python
+# Questions remain unsolved: 
+# basic theory of mean encoding?
+# better way to create the correlation matrix?
+# how does feature importance computed in the RFE object?
+# importance display
+# model interpretation?
+# how to accelerating the modeling calibration process?
+# apply Xgboost?
+```
+
+![](Better_code_3.PNG)
