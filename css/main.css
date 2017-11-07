@@ -442,6 +442,8 @@ footer .theme-by {
     float: left;
   }
 }
+
+
 /* --- Post and page headers --- */
 
 .intro-header {
@@ -486,11 +488,11 @@ footer .theme-by {
 }
 .intro-header .post-heading h1 {
   margin-top: 0;
-  font-size: 35px;
+  font-size: 30px;
 }
 .intro-header .page-heading .page-subheading,
 .intro-header .post-heading .post-subheading {
-  font-size: 27px;
+  font-size: 25px;
   line-height: 1.1;
   display: block;
   font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -657,13 +659,15 @@ table tr th {
   border: 1px solid #cccccc;
   text-align: left;
   margin: 0;
-  padding: 6px 13px;
+  font-size: 15px;
+  padding: 3px 3px;
 }
 table tr td {
   border: 1px solid #cccccc;
   text-align: left;
   margin: 0;
-  padding: 6px 13px;
+  font-size: 15px;
+  padding: 3px 3px;
 }
 table tr th :first-child,
 table tr td :first-child {
