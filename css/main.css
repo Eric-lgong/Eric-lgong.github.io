@@ -677,7 +677,7 @@ table tr td :last-child {
 /* --- Code blocks --- */
 
 pre {
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.5em;
 }
 pre code {
@@ -693,7 +693,7 @@ pre.highlight, .highlight > pre, td.code pre {
 }
 code table, code table td, code table th, code table tbody, code table tr,
 td.gutter pre {
-  padding: 2;
+  padding: 0;
   border: none;
   background-color: #fff;
 }
@@ -707,7 +707,7 @@ td.code pre {
   border-radius: 0;
 }
 td.gutter {
-  padding-top: 3px;
+  padding-top: 1px;
 }
 
 /* --- Social media sharing section --- */
