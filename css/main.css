@@ -61,7 +61,15 @@ hr.small {
   .main-content {
     padding-top: 130px;
   }
+  # below are added
+  .table-responsive {
+    width: 100%;
+    margin-bottom: 13.5px;
+    overflow-y: hidden;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+  }
 }
+
 
 .main-explain-area {
   font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
