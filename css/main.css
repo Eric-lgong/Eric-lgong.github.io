@@ -30,7 +30,7 @@ p a {
 }
 h1,h2,h3,h4,h5,h6 {
   font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
 }
 a {
   color: #008AFF;
@@ -677,8 +677,8 @@ table tr td :last-child {
 /* --- Code blocks --- */
 
 pre {
-  font-size: 14px;
-  line-height: 1.3em;
+  font-size: 15px;
+  line-height: 1.5em;
 }
 pre code {
   white-space: pre;
@@ -693,7 +693,7 @@ pre.highlight, .highlight > pre, td.code pre {
 }
 code table, code table td, code table th, code table tbody, code table tr,
 td.gutter pre {
-  padding: 0;
+  padding: 2;
   border: none;
   background-color: #fff;
 }
