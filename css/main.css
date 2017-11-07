@@ -8,7 +8,7 @@ layout: null
 
 body {
   font-family: 'Lora', 'Times New Roman', serif;
-  font-size: 18px;
+  font-size: 15px;
   color: #404040;
   position: relative;
   background: #FFF;
@@ -347,7 +347,7 @@ footer .theme-by {
 }
 
 .post-preview .post-title {
-  font-size: 30px;
+  font-size: 25px;
   margin-top: 0;
 }
 .post-preview .post-subtitle {
@@ -358,7 +358,7 @@ footer .theme-by {
 .post-preview .post-meta,
 .post-heading .post-meta {
   color: #808080;
-  font-size: 18px;
+  font-size: 15px;
   font-style: italic;
   margin: 0 0 10px;
 }
@@ -677,8 +677,8 @@ table tr td :last-child {
 /* --- Code blocks --- */
 
 pre {
-  font-size: 16px;
-  line-height: 1.5em;
+  font-size: 11px;
+  line-height: 1.2em;
 }
 pre code {
   white-space: pre;
