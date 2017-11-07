@@ -646,6 +646,9 @@ footer .theme-by {
 table {
   padding: 0;
 }
+table {
+    border-collapse: collapse;
+  }
 table tr {
   border-top: 1px solid #cccccc;
   background-color: #ffffff;
