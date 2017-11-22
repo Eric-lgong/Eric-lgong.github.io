@@ -19,8 +19,8 @@ This post is created as a quick reference to assist Markdown users to get a bett
 
 
 
-Reference:
-https://beegit.com/markdown-cheat-sheet
-http://nestacms.com/docs/creating-content/markdown-cheat-sheet
-https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
-https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed
+Reference:  <br>
+https://beegit.com/markdown-cheat-sheet <br>
+http://nestacms.com/docs/creating-content/markdown-cheat-sheet <br>
+https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet <br>
+https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed <br>
