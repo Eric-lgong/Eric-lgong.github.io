@@ -9,11 +9,33 @@ This post is created as a quick reference to assist Markdown users to get a bett
 # Table of Contents
 * Bulleted List
 * Horizontal Line
+---
+
 
 ## Bulleted List:
+```
 * Bulleted Style 1 - Item 1
 * Bulleted Style 1 - Item 2
-* Bulleted Style 1 - Item 3
+
+- Bulleted Style 1 - Item 1
+- Bulleted Style 1 - Item 2
+
++ Bulleted Style 1 - Item 1
++ Bulleted Style 1 - Item 2
+```
+
+* Bulleted Style 1 - Item 1
+* Bulleted Style 1 - Item 2
+
+- Bulleted Style 1 - Item 1
+- Bulleted Style 1 - Item 2
+
++ Bulleted Style 1 - Item 1
++ Bulleted Style 1 - Item 2
+---
+
+
+
 
 ## Horizontal Line:
 
