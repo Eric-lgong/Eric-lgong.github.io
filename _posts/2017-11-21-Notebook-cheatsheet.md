@@ -57,9 +57,9 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 `[X] Checked Item`    <br>
 
 #### Code Blocks:
-`\`inline code.\``                        <br>
-`\```This is a fenced code block.\````    <br>
-`⋅⋅⋅⋅This is also a fenced code block.`     <br>
+\`inline code.\`                        <br>
+\```This is a fenced code block.\```    <br>
+⋅⋅⋅⋅This is also a fenced code block.     <br>
 
 #### Emphasis:
 &nbsp;&nbsp;&nbsp;&nbsp; `*Italic*`    <br>
