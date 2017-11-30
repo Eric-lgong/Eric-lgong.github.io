@@ -12,6 +12,8 @@ This post is created as a quick reference to assist Markdown users to get a bett
 * Alighning Text
 * Blockquotes
 * Bulleted List
+* Checklists (Task Lists)
+* Code Blocks
 * Emphasis
 * Escaping Characters
 * Headers
@@ -37,7 +39,7 @@ This post is created as a quick reference to assist Markdown users to get a bett
 Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example, you can use `<div style="text-align: right"> show-the-text-to-the-right </div>` to align the text to the right. The outcome is as follows:
 <div style="text-align: right"> show-the-text-to-the-right </div>
 
-Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put the text in the middle. The outcome is as follows:
+Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put the text in the middle. It renders to:
 <div style="text-align: center"> show-the-text-in-the-middle </div>
 <br>
 
@@ -49,6 +51,15 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 &nbsp;&nbsp;&nbsp;&nbsp; `* Bulleted Item`    <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `- Bulleted Item`    <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `+ Bulleted Item`    <br>
+
+#### Checklists (Task Lists):
+`[⋅] Unchecked Item`    # Dots indicate spaces    <br>
+`[X] Checked Item`    <br>
+
+#### Code Blocks:
+`This is an example of \`inline code.\``
+`\```This is a fenced code block.\````
+`⋅⋅⋅⋅This is also a fenced code block.`
 
 #### Emphasis:
 &nbsp;&nbsp;&nbsp;&nbsp; `*Italic*`    <br>
@@ -68,8 +79,8 @@ Use `\*don't italicize this\*` to escape asterisks inside italic block, as shown
 &nbsp;&nbsp;&nbsp;&nbsp; `###### h6 Heading`    <br>
 
 #### Highlighting:
-You can use HTML to highlight text in markdown. For example, using `<span style="background-color: #FFFF00">Marked text</span>` in markdown will generate:    <br>
-&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color: #FFFF00">Marked text</span>    <br>
+You can use HTML to highlight text in markdown. For example, using `<span style="background-color: #FFFF00">Text-to-be-highlighted</span>` in markdown will generate:    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color: #FFFF00">Text-to-be-highlighted</span>    <br>
 
 #### Horizontal Line:
 &nbsp;&nbsp;&nbsp;&nbsp; `***  three consecutive asterisks `      <br>
@@ -86,10 +97,10 @@ Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 sp
 &nbsp;&nbsp;&nbsp;&nbsp; `3. Numbered Item 3`    <br>
 
 #### Nested List:
-&nbsp;&nbsp;&nbsp;&nbsp;  `1. Numbered Item`    <br>
-&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    <br>
-&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    <br>
-&nbsp;&nbsp;&nbsp;&nbsp;  `2. Numbered Item`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `1. Numbered Item`                              <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    # Dots indicate spaces    <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    # Dots indicate spaces    <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `2. Numbered Item`                              <br>
 
 
 #### Strikethrough:
