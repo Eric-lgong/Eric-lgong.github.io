@@ -6,16 +6,19 @@ tags: [Markdown, LJupyter Notebook, Python]
 
 This post is created as a quick reference to assist Markdown users to get a better writting experience in Jupyter Notebook.<br>
 
-### Markdown Skills in this Page
+#### Markdown Skills Covered on this Page
 * Adding Image
 * Adding Link
 * Alighning Text
 * Blockquotes
 * Bulleted List
 * Emphasis
+* Escaping Characters
 * Headers
 * Horizontal Line
 * Indenting Lines
+* Numbered List
+* Nested List
 * Strikethrough
 <br>
 <br>
@@ -50,6 +53,10 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 &nbsp;&nbsp;&nbsp;&nbsp; `*Italic*`    <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `**Bold**`    <br>
 
+#### Escaping Characters:
+Use `\*don't italicize this\*` to escape asterisks inside italic block, as shown below:   <br>
+\*don't italicize this\*   <br>
+
 
 #### Headers:
 &nbsp;&nbsp;&nbsp;&nbsp; `# h1 Heading`    <br>
@@ -68,17 +75,29 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 space characters in front of `text`, as shown below: <br>
 &nbsp;&nbsp;&nbsp;&nbsp;text    <br>
 
+#### Numbered List:
+&nbsp;&nbsp;&nbsp;&nbsp; `1. Numbered Item 1`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `2. Numbered Item 2`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `3. Numbered Item 3`    <br>
+
+#### Nested List:
+&nbsp;&nbsp;&nbsp;&nbsp;  `1. Numbered Item`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `2. Numbered Item`    <br>
+
+
 #### Strikethrough:
 &nbsp;&nbsp;&nbsp;&nbsp; `~~Strikethrough~~`    <br>
 
 
-#### Escaping Characters:
-\*don't italicize this\*
 
+#### Text Highlighting
+==Text to be highlighted==
 
 
 #### Reference:    <br>
-https://beegit.com/markdown-cheat-sheet <br>
-http://nestacms.com/docs/creating-content/markdown-cheat-sheet <br>
-https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet <br>
-https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed <br>
+[https://beegit.com/markdown-cheat-sheet](https://beegit.com/markdown-cheat-sheet) <br>
+[http://nestacms.com/docs/creating-content/markdown-cheat-sheet](http://nestacms.com/docs/creating-content/markdown-cheat-sheet) <br>
+[https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) <br>
+[https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed](https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed) <br>
