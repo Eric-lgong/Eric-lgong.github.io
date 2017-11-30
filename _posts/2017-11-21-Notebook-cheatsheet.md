@@ -7,14 +7,16 @@ tags: [Markdown, LJupyter Notebook, Python]
 This post is created as a quick reference to assist Markdown users to get a better writting experience in Jupyter Notebook.<br>
 
 # Table of Contents
+* Alighning Text
 * Bulleted List
 * Horizontal Line
 
 
 ---
 ### Aligning Text:
-Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example:
+Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example, you can use <div style="text-align: right"> show-the-text-to-the-right </div> to align the text to the right. The outcome is as follows:
 <div style="text-align: right"> show-the-text-to-the-right </div>
+
 
 ### Bulleted List:
 * Bulleted Item
