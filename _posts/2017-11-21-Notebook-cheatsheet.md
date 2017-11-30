@@ -15,6 +15,7 @@ This post is created as a quick reference to assist Markdown users to get a bett
 * Emphasis
 * Escaping Characters
 * Headers
+* Highlighting
 * Horizontal Line
 * Indenting Lines
 * Numbered List
@@ -66,6 +67,9 @@ Use `\*don't italicize this\*` to escape asterisks inside italic block, as shown
 &nbsp;&nbsp;&nbsp;&nbsp; `##### h5 Heading`    <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `###### h6 Heading`    <br>
 
+#### Highlighting:
+&nbsp;&nbsp;&nbsp;&nbsp; `==Text to be highlighted==`    <br>
+
 #### Horizontal Line:
 &nbsp;&nbsp;&nbsp;&nbsp; `***  three consecutive asterisks `      <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `---  three consecutive dashes `         <br>
@@ -92,8 +96,7 @@ Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 sp
 
 
 
-#### Text Highlighting
-==Text to be highlighted==
+
 
 
 #### Reference:    <br>
