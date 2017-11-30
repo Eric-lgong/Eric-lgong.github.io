@@ -114,7 +114,12 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 <br>
 `<sub>text</sub>` is the equivalent for subscripts. <br>
 
-
+#### Table:
+`|  Tables  |      Are      | Cool |`    <br>
+`|----------|:-------------:|-----:|`    <br>
+`| col 1 is |  left-aligned | $100 |`    <br>
+`| col 2 is |    centered   |  $52 |`    <br>
+`| col 3 is | right-aligned |   $9 |`    <br>
 
 
 #### Reference:    <br>
