@@ -29,8 +29,12 @@ Use *<div style="text-align: center"> show-the-text-in-the-middle </div>* to put
 
 
 ### Headers:
-`# h1 Heading`
-`## h3 Heading`
+&nbsp;&nbsp;&nbsp;&nbsp; `# h1 Heading`  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `## h2 Heading`  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `### h3 Heading`  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `#### h4 Heading`  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `##### h5 Heading`  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `###### h6 Heading`  <br>
 
 ### Horizontal Line:
 ***  three consecutive asterisks
