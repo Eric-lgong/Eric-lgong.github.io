@@ -14,6 +14,7 @@ This post is created as a quick reference to assist Markdown users to get a bett
 * Horizontal Line
 * Indenting Lines
 <br>
+<br>
 
 #### Aligning Text:
 Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example, you can use `<div style="text-align: right"> show-the-text-to-the-right </div>` to align the text to the right. The outcome is as follows:
@@ -24,13 +25,13 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 <br>
 
 #### Bulleted List:
-`* Bulleted Item`    <br>
-`- Bulleted Item`    <br>
-`+ Bulleted Item`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `* Bulleted Item`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `- Bulleted Item`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `+ Bulleted Item`    <br>
 
 #### Emphasis:
-`*Italic*`    <br>
-`**Bold**`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `*Italic*`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `**Bold**`    <br>
 
 
 #### Headers:
@@ -42,12 +43,12 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 &nbsp;&nbsp;&nbsp;&nbsp; `###### h6 Heading`    <br>
 
 #### Horizontal Line:
-`***  three consecutive asterisks `      <br>
-`---  three consecutive dashes `         <br>
-`___  three consecutive underscores `    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `***  three consecutive asterisks `      <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `---  three consecutive dashes `         <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `___  three consecutive underscores `    <br>
 
 #### Indenting Lines
-Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 space characters in front of `text`:
+Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 space characters in front of `text`, as shown below: <br>
 &nbsp;&nbsp;&nbsp;&nbsp;text    <br>
 
 #### Reference:    <br>
