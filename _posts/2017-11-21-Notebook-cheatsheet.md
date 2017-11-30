@@ -7,14 +7,27 @@ tags: [Markdown, LJupyter Notebook, Python]
 This post is created as a quick reference to assist Markdown users to get a better writting experience in Jupyter Notebook.<br>
 
 ### Markdown Skills in this Page
+* Adding Image
+* Adding Link
 * Alighning Text
+* Blockquotes
 * Bulleted List
 * Emphasis
 * Headers
 * Horizontal Line
 * Indenting Lines
+* Strikethrough
 <br>
 <br>
+<br>
+
+
+#### Adding Image:
+&nbsp;&nbsp;&nbsp;&nbsp; `![Image Text](/path/to/image.jpg)`            <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `![Image Text](/path/to/image.jpg "Title")`    <br>
+
+#### Adding Link:
+&nbsp;&nbsp;&nbsp;&nbsp; `[Link Text](https://www.google.com/)`    <br>
 
 #### Aligning Text:
 Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example, you can use `<div style="text-align: right"> show-the-text-to-the-right </div>` to align the text to the right. The outcome is as follows:
@@ -23,6 +36,10 @@ Aligning text in native markdown is not possible. However, you can align the tex
 Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put the text in the middle. The outcome is as follows:
 <div style="text-align: center"> show-the-text-in-the-middle </div>
 <br>
+
+#### Blockquotes:
+&nbsp;&nbsp;&nbsp;&nbsp; `> Blockquote`            <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `>> Nested blockquote`    <br>
 
 #### Bulleted List:
 &nbsp;&nbsp;&nbsp;&nbsp; `* Bulleted Item`    <br>
@@ -47,9 +64,12 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 &nbsp;&nbsp;&nbsp;&nbsp; `---  three consecutive dashes `         <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `___  three consecutive underscores `    <br>
 
-#### Indenting Lines
+#### Indenting Lines:
 Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 space characters in front of `text`, as shown below: <br>
 &nbsp;&nbsp;&nbsp;&nbsp;text    <br>
+
+#### Strikethrough:
+&nbsp;&nbsp;&nbsp;&nbsp; `~~Strikethrough~~`    <br>
 
 #### Reference:    <br>
 https://beegit.com/markdown-cheat-sheet <br>
