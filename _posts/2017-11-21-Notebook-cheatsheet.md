@@ -54,14 +54,14 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 &nbsp;&nbsp;&nbsp;&nbsp; `+ Bulleted Item`    <br>
 
 #### Checklists (Task Lists):
-`[⋅] Unchecked Item`      Dots indicate spaces    <br>
-`[X] Checked Item`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `[⋅] Unchecked Item`      Dots indicate spaces    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `[X] Checked Item`    <br>
 
 #### Code Blocks:
-\`This is inline code.\`                <br>
+&nbsp;&nbsp;&nbsp;&nbsp; \`This is inline code.\`                                          <br>
 
-\```This is a fenced code block.\```    <br>
-⋅⋅⋅⋅This is also a fenced code block.     <br>
+&nbsp;&nbsp;&nbsp;&nbsp; \```This is a fenced code block.\```                              <br>
+&nbsp;&nbsp;&nbsp;&nbsp; ⋅⋅⋅⋅This is also a fenced code block.      Dots indicate spaces     <br>
 
 #### Emphasis:
 &nbsp;&nbsp;&nbsp;&nbsp; `*Italic*`    <br>
@@ -69,7 +69,7 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 
 #### Escaping Characters:
 Use `\*don't italicize this\*` to escape asterisks inside italic block, as shown below:   <br>
-\*don't italicize this\*   <br>
+&nbsp;&nbsp;&nbsp;&nbsp; \*don't italicize this\*   <br>
 
 
 #### Headers:
