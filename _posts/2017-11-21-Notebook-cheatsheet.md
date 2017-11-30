@@ -22,9 +22,9 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 <br>
 
 ### Bulleted List:
-* Bulleted Item
-- Bulleted Item
-+ Bulleted Item
+`* Bulleted Item`    <br>
+`- Bulleted Item`    <br>
+`+ Bulleted Item`    <br>
 <br>
 
 ### Headers:
@@ -37,9 +37,9 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 <br>
 
 ### Horizontal Line:
-***  three consecutive asterisks
----  three consecutive dashes
-___  three consecutive underscores
+`***  three consecutive asterisks `    <br>
+`---  three consecutive dashes `       <br>
+`___  three consecutive underscores `  <br>
 <br>
 
 Reference:  <br>
