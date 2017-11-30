@@ -6,18 +6,19 @@ tags: [Markdown, LJupyter Notebook, Python]
 
 This post is created as a quick reference to assist Markdown users to get a better writting experience in Jupyter Notebook.<br>
 
-# Table of Contents
+## Markdown Skills in this Page
 * Alighning Text
 * Bulleted List
+* Headers
 * Horizontal Line
 
 
----
+
 ### Aligning Text:
 Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example, you can use *<div style="text-align: right"> show-the-text-to-the-right </div>* to align the text to the right. The outcome is as follows:
 <div style="text-align: right"> show-the-text-to-the-right </div>
 
-Put *<div style="text-align: center"> show-the-text-in-the-middle </div>* to center the text. The outcome is as follows:
+Use *<div style="text-align: center"> show-the-text-in-the-middle </div>* to put the text in the middle. The outcome is as follows:
 <div style="text-align: center"> show-the-text-in-the-middle </div>
 
 
@@ -27,10 +28,16 @@ Put *<div style="text-align: center"> show-the-text-in-the-middle </div>* to cen
 + Bulleted Item
 
 
-
+### Headers:
+`# h1 Heading`
+`## h3 Heading`
 
 ### Horizontal Line:
-*** or --- or ___
+***  three consecutive asterisks
+---  three consecutive dashes
+___  three consecutive underscores
+
+
 
 
 Reference:  <br>
