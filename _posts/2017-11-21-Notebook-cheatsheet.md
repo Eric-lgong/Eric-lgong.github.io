@@ -121,14 +121,15 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 `| col 1 is |  left-aligned | $100 |`    <br>
 `| col 2 is |    centered   |  $52 |`    <br>
 `| col 3 is | right-aligned |   $9 |`    <br>
-It renders to:                           <br>
 
+It renders to: 
 |  Tables  |      Are      | Cool |
 |----------|:-------------:|-----:|
 | col 1 is |  left-aligned | $100 |
 | col 2 is |    centered   |  $52 |
 | col 3 is | right-aligned |   $9 |
-<br>
+
+
 
 #### Reference:    <br>
 [https://beegit.com/markdown-cheat-sheet](https://beegit.com/markdown-cheat-sheet) <br>
