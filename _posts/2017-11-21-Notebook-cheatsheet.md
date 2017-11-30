@@ -53,13 +53,13 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 &nbsp;&nbsp;&nbsp;&nbsp; `+ Bulleted Item`    <br>
 
 #### Checklists (Task Lists):
-`[⋅] Unchecked Item`    # Dots indicate spaces    <br>
+`[⋅] Unchecked Item`    Dots indicate spaces    <br>
 `[X] Checked Item`    <br>
 
 #### Code Blocks:
-`This is an example of \`inline code.\``
-`\```This is a fenced code block.\````
-`⋅⋅⋅⋅This is also a fenced code block.`
+`\`inline code.\``                        <br>
+`\```This is a fenced code block.\````    <br>
+`⋅⋅⋅⋅This is also a fenced code block.`     <br>
 
 #### Emphasis:
 &nbsp;&nbsp;&nbsp;&nbsp; `*Italic*`    <br>
