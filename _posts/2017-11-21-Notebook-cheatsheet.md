@@ -122,6 +122,7 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 `| col 2 is |    centered   |  $52 |`    <br>
 `| col 3 is | right-aligned |   $9 |`    <br>
 It renders to:                           <br>
+
 |  Tables  |      Are      | Cool |
 |----------|:-------------:|-----:|
 | col 1 is |  left-aligned | $100 |
