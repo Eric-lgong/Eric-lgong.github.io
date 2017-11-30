@@ -25,7 +25,6 @@ This post is created as a quick reference to assist Markdown users to get a bett
 * Nested List
 * Strikethrough
 * Superscript and Subscript
-* Table
 <br>
 <br>
 <br>
@@ -125,19 +124,7 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 <br>
 `<sub>text</sub>` is the equivalent for subscripts. <br>
 
-#### Table:
-`|  Tables  |      Are      | Cool |`    <br>
-`|----------|:-------------:|-----:|`    <br>
-`| col 1 is |  left-aligned | $100 |`    <br>
-`| col 2 is |    centered   |  $52 |`    <br>
-`| col 3 is | right-aligned |   $9 |`    <br>
 
-It renders to: 
-|  Tables  |      Are      | Cool |
-|----------|:-------------:|-----:|
-| col 1 is |  left-aligned |  100 |
-| col 2 is |    centered   |   52 |
-| col 3 is | right-aligned |    9 |
 
 
 
