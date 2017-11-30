@@ -68,7 +68,8 @@ Use `\*don't italicize this\*` to escape asterisks inside italic block, as shown
 &nbsp;&nbsp;&nbsp;&nbsp; `###### h6 Heading`    <br>
 
 #### Highlighting:
-&nbsp;&nbsp;&nbsp;&nbsp; `==Text to be highlighted==`    <br>
+You can use HTML to highlight text in markdown. For example, using `<span style="background-color: #FFFF00">Marked text</span>` in markdown will generate:    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; <span style="background-color: #FFFF00">Marked text</span>    <br>
 
 #### Horizontal Line:
 &nbsp;&nbsp;&nbsp;&nbsp; `***  three consecutive asterisks `      <br>
