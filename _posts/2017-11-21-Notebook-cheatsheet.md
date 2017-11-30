@@ -14,8 +14,11 @@ This post is created as a quick reference to assist Markdown users to get a bett
 
 ---
 ### Aligning Text:
-Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example, you can use <div style="text-align: right"> show-the-text-to-the-right </div> to align the text to the right. The outcome is as follows:
+Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example, you can use *<div style="text-align: right"> show-the-text-to-the-right </div>* to align the text to the right. The outcome is as follows:
 <div style="text-align: right"> show-the-text-to-the-right </div>
+
+Put *<div style="text-align: center"> show-the-text-in-the-middle </div>* to center the text. The outcome is as follows:
+<div style="text-align: center"> show-the-text-in-the-middle </div>
 
 
 ### Bulleted List:
