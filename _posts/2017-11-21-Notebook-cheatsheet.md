@@ -12,35 +12,20 @@ This post is created as a quick reference to assist Markdown users to get a bett
 
 
 ---
+### Aligning Text:
+Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example:
+<div style="text-align: right"> show-the-text-to-the-right </div>
 
-
-## Bulleted List:
-```
-* Bulleted Style 1 - Item 1
-* Bulleted Style 1 - Item 2
-
-- Bulleted Style 1 - Item 1
-- Bulleted Style 1 - Item 2
-
-+ Bulleted Style 1 - Item 1
-+ Bulleted Style 1 - Item 2
-```
-
-* Bulleted Style 1 - Item 1
-* Bulleted Style 1 - Item 2
-
-- Bulleted Style 1 - Item 1
-- Bulleted Style 1 - Item 2
-
-+ Bulleted Style 1 - Item 1
-+ Bulleted Style 1 - Item 2
----
+### Bulleted List:
+* Bulleted Item
+- Bulleted Item
++ Bulleted Item
 
 
 
 
-## Horizontal Line:
-
+### Horizontal Line:
+*** or --- or ___
 
 
 Reference:  <br>
