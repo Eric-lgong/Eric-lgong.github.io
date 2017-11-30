@@ -108,9 +108,9 @@ Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 sp
 &nbsp;&nbsp;&nbsp;&nbsp; `~~Strikethrough~~`    <br>
 
 #### Superscript and Subscript:
-Use the <sup>text</sup> for superscripts. For example, if you type O(n<sup>2</sup>), you will get: <br>
+Use the <sup>text</sup> for superscripts. For example, if you type `O(n<sup>2</sup>)`, you will get: <br>
 O(n<sup>2</sup>)     <br>
-<sub>text</sub> is the equivalent for subscripts. <br>
+`<sub>text</sub>` is the equivalent for subscripts. <br>
 
 
 
