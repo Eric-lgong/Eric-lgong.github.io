@@ -54,11 +54,12 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 &nbsp;&nbsp;&nbsp;&nbsp; `+ Bulleted Item`    <br>
 
 #### Checklists (Task Lists):
-`[⋅] Unchecked Item`    Dots indicate spaces    <br>
+`[⋅] Unchecked Item`      Dots indicate spaces    <br>
 `[X] Checked Item`    <br>
 
 #### Code Blocks:
-\`inline code.\`                        <br>
+\`This is inline code.\`                <br>
+
 \```This is a fenced code block.\```    <br>
 ⋅⋅⋅⋅This is also a fenced code block.     <br>
 
@@ -98,10 +99,10 @@ Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 sp
 &nbsp;&nbsp;&nbsp;&nbsp; `3. Numbered Item 3`    <br>
 
 #### Nested List:
-&nbsp;&nbsp;&nbsp;&nbsp;  `1. Numbered Item`                              <br>
-&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    # Dots indicate spaces    <br>
-&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    # Dots indicate spaces    <br>
-&nbsp;&nbsp;&nbsp;&nbsp;  `2. Numbered Item`                              <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `1. Numbered Item`                            <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    Dots indicate spaces    <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `⋅⋅* Bulleted Item`    Dots indicate spaces    <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  `2. Numbered Item`                            <br>
 
 
 #### Strikethrough:
@@ -109,7 +110,8 @@ Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 sp
 
 #### Superscript and Subscript:
 Use the <sup>text</sup> for superscripts. For example, if you type `O(n<sup>2</sup>)`, you will get: <br>
-O(n<sup>2</sup>)     <br>
+&nbsp;&nbsp;&nbsp;&nbsp;  O(n<sup>2</sup>)     <br>
+<br>
 `<sub>text</sub>` is the equivalent for subscripts. <br>
 
 
