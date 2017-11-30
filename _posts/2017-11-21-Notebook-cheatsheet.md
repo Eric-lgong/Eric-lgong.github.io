@@ -11,8 +11,9 @@ This post is created as a quick reference to assist Markdown users to get a bett
 * Bulleted List
 * Headers
 * Horizontal Line
-
-
+<br>
+<br>
+<br>
 
 ### Aligning Text:
 Aligning text in native markdown is not possible. However, you can align the text using inline HTML tags. For example, you can use *<div style="text-align: right"> show-the-text-to-the-right </div>* to align the text to the right. The outcome is as follows:
@@ -20,13 +21,17 @@ Aligning text in native markdown is not possible. However, you can align the tex
 
 Use *<div style="text-align: center"> show-the-text-in-the-middle </div>* to put the text in the middle. The outcome is as follows:
 <div style="text-align: center"> show-the-text-in-the-middle </div>
-
+<br>
+<br>
+<br>
 
 ### Bulleted List:
 * Bulleted Item
 - Bulleted Item
 + Bulleted Item
-
+<br>
+<br>
+<br>
 
 ### Headers:
 &nbsp;&nbsp;&nbsp;&nbsp; `# h1 Heading`  <br>
@@ -35,14 +40,17 @@ Use *<div style="text-align: center"> show-the-text-in-the-middle </div>* to put
 &nbsp;&nbsp;&nbsp;&nbsp; `#### h4 Heading`  <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `##### h5 Heading`  <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `###### h6 Heading`  <br>
+<br>
+<br>
+<br>
 
 ### Horizontal Line:
 ***  three consecutive asterisks
 ---  three consecutive dashes
 ___  three consecutive underscores
-
-
-
+<br>
+<br>
+<br>
 
 Reference:  <br>
 https://beegit.com/markdown-cheat-sheet <br>
