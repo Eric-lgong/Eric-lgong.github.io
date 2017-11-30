@@ -23,6 +23,7 @@ This post is created as a quick reference to assist Markdown users to get a bett
 * Numbered List
 * Nested List
 * Strikethrough
+* Superscript and Subscript
 <br>
 <br>
 <br>
@@ -106,7 +107,10 @@ Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 sp
 #### Strikethrough:
 &nbsp;&nbsp;&nbsp;&nbsp; `~~Strikethrough~~`    <br>
 
-
+#### Superscript and Subscript:
+Use the <sup>text</sup> for superscripts. For example, if you type O(n<sup>2</sup>), you will get: <br>
+O(n<sup>2</sup>)     <br>
+<sub>text</sub> is the equivalent for subscripts. <br>
 
 
 
