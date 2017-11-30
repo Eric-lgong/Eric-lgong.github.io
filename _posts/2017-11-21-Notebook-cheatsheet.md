@@ -9,6 +9,7 @@ This post is created as a quick reference to assist Markdown users to get a bett
 ### Markdown Skills in this Page
 * Alighning Text
 * Bulleted List
+* Emphasis
 * Headers
 * Horizontal Line
 * Indenting Lines
@@ -27,24 +28,29 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 `- Bulleted Item`    <br>
 `+ Bulleted Item`    <br>
 
+#### Emphasis:
+`*Italic*`    <br>
+`**Bold**`    <br>
+
+
 #### Headers:
-&nbsp;&nbsp;&nbsp;&nbsp; `# h1 Heading`  <br>
-&nbsp;&nbsp;&nbsp;&nbsp; `## h2 Heading`  <br>
-&nbsp;&nbsp;&nbsp;&nbsp; `### h3 Heading`  <br>
-&nbsp;&nbsp;&nbsp;&nbsp; `#### h4 Heading`  <br>
-&nbsp;&nbsp;&nbsp;&nbsp; `##### h5 Heading`  <br>
-&nbsp;&nbsp;&nbsp;&nbsp; `###### h6 Heading`  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `# h1 Heading`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `## h2 Heading`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `### h3 Heading`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `#### h4 Heading`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `##### h5 Heading`    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `###### h6 Heading`    <br>
 
 #### Horizontal Line:
-`***  three consecutive asterisks `    <br>
-`---  three consecutive dashes `       <br>
-`___  three consecutive underscores `  <br>
+`***  three consecutive asterisks `      <br>
+`---  three consecutive dashes `         <br>
+`___  three consecutive underscores `    <br>
 
 #### Indenting Lines
 Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 space characters in front of `text`:
-&nbsp;&nbsp;&nbsp;&nbsp;text  <br>
+&nbsp;&nbsp;&nbsp;&nbsp;text    <br>
 
-#### Reference:  <br>
+#### Reference:    <br>
 https://beegit.com/markdown-cheat-sheet <br>
 http://nestacms.com/docs/creating-content/markdown-cheat-sheet <br>
 https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet <br>
