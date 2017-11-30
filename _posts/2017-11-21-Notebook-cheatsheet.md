@@ -71,6 +71,12 @@ Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 sp
 #### Strikethrough:
 &nbsp;&nbsp;&nbsp;&nbsp; `~~Strikethrough~~`    <br>
 
+
+#### Escaping Characters:
+\*don't italicize this\*
+
+
+
 #### Reference:    <br>
 https://beegit.com/markdown-cheat-sheet <br>
 http://nestacms.com/docs/creating-content/markdown-cheat-sheet <br>
