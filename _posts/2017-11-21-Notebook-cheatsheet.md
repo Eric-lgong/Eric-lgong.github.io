@@ -58,20 +58,11 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 #### Change Font Type and Size:
 Use the following code to change font type and size in markdown:          <br>
 `<span style="color: #f2cf4a; font-family: Arial; font-size: 10pt;">change-font-type-and-size, Arial, 10pt</span>`  <br>
-`<span style="color: #f2cf4a; font-family: Arial; font-size: 15pt;">change-font-type-and-size, Arial, 15pt</span>`  <br>
 `<span style="color: #f2cf4a; font-family: Arial; font-size: 20pt;">change-font-type-and-size, Arial, 20pt</span>`  <br>
-
-`<span style="color: #f2cf4a; font-family: Times New Roman; font-size: 10pt;">change-font-type-and-size, Times New Roman, 10pt</span>`  <br>
-`<span style="color: #f2cf4a; font-family: Times New Roman; font-size: 15pt;">change-font-type-and-size, Times New Roman, 15pt</span>`  <br>
-`<span style="color: #f2cf4a; font-family: Times New Roman; font-size: 20pt;">change-font-type-and-size, Times New Roman, 20pt</span>`  <br>
+<br>
 It renders to:          <br>
 <span style="color: #1E824C; font-family: Arial; font-size: 10pt;">change-font-type-and-size, Arial, 10pt</span>  <br>
-<span style="color: #1E824C; font-family: Arial; font-size: 15pt;">change-font-type-and-size, Arial, 15pt</span>  <br>
 <span style="color: #1E824C; font-family: Arial; font-size: 20pt;">change-font-type-and-size, Arial, 20pt</span>  <br>
-
-<span style="color: #CA002A; font-family: Times New Roman; font-size: 10pt;">change-font-type-and-size, Times New Roman, 10pt</span>  <br>
-<span style="color: #CA002A; font-family: Times New Roman; font-size: 15pt;">change-font-type-and-size, Times New Roman, 15pt</span>  <br>
-<span style="color: #CA002A; font-family: Times New Roman; font-size: 20pt;">change-font-type-and-size, Times New Roman, 20pt</span>  <br>
 
 #### Checklists (Task Lists):
 &nbsp;&nbsp;&nbsp;&nbsp; `[⋅] Unchecked Item`      Dots indicate spaces    <br>
@@ -144,9 +135,9 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 It renders to: 
 |  Tables  |      Are      | Cool |
 |----------|:-------------:|-----:|
-| col 1 is |  left-aligned | $100 |
-| col 2 is |    centered   |  $52 |
-| col 3 is | right-aligned |   $9 |
+| col 1 is |  left-aligned |  100 |
+| col 2 is |    centered   |   52 |
+| col 3 is | right-aligned |    9 |
 
 
 
