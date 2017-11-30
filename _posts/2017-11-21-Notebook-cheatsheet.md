@@ -60,8 +60,7 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 #### Code Blocks:
 &nbsp;&nbsp;&nbsp;&nbsp; \`This is inline code.\`                                          <br>
 
-&nbsp;&nbsp;&nbsp;&nbsp; \```This is a fenced code block.\```                              <br>
-&nbsp;&nbsp;&nbsp;&nbsp; ⋅⋅⋅⋅This is also a fenced code block.      Dots indicate spaces     <br>
+
 
 #### Emphasis:
 &nbsp;&nbsp;&nbsp;&nbsp; `*Italic*`    <br>
@@ -109,7 +108,7 @@ Markdown allows inline HTML, so writing `&nbsp;&nbsp;&nbsp;&nbsp;text` will 4 sp
 &nbsp;&nbsp;&nbsp;&nbsp; `~~Strikethrough~~`    <br>
 
 #### Superscript and Subscript:
-Use the <sup>text</sup> for superscripts. For example, if you type `O(n<sup>2</sup>)`, you will get: <br>
+Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2</sup>)`, you will get: <br>
 &nbsp;&nbsp;&nbsp;&nbsp;  O(n<sup>2</sup>)     <br>
 <br>
 `<sub>text</sub>` is the equivalent for subscripts. <br>
