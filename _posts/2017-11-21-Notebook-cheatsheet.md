@@ -68,9 +68,11 @@ It renders to:          <br>
 &nbsp;&nbsp;&nbsp;&nbsp; `[X] Checked Item`    <br>
 
 #### Code Blocks:
-&nbsp;&nbsp;&nbsp;&nbsp; \`This is inline code.\`                                          <br>
-&nbsp;&nbsp;&nbsp;&nbsp; \```This is a fenced code block.```                               <br>
+```
+&nbsp;&nbsp;&nbsp;&nbsp; `This is inline code.`                                          <br>
+&nbsp;&nbsp;&nbsp;&nbsp; ```This is a fenced code block.```                               <br>
 &nbsp;&nbsp;&nbsp;&nbsp; ⋅⋅⋅⋅This is also a fenced code block.      Dots indicate spaces     <br>
+```
 
 
 #### Emphasis:
