@@ -57,12 +57,12 @@ Use `<div style="text-align: center"> show-the-text-in-the-middle </div>` to put
 
 #### Change Font Type and Size:
 Use the following code to change font type and size in markdown:          <br>
-&nbsp;&nbsp;&nbsp;&nbsp; `<span style="color: #f2cf4a; font-family: Arial; font-size: 10pt;">change-font-type-and-size, Arial, 10pt</span>`  <br>
-&nbsp;&nbsp;&nbsp;&nbsp; `<span style="color: #e40040; font-family: Arial; font-size: 20pt;">change-font-type-and-size, Arial, 20pt</span>`  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `<span style="color: #f2cf4a; font-family: Arial; font-size: 10pt;">Text, Arial, 10pt</span>`  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; `<span style="color: #446CB3; font-family: Arial; font-size: 20pt;">Text, Arial, 20pt</span>`  <br>
 <br>
 It renders to:          <br>
-&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #1E824C; font-family: Arial; font-size: 10pt;">change-font-type-and-size, Arial, 10pt</span>  <br>
-&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #e40040; font-family: Arial; font-size: 20pt;">change-font-type-and-size, Arial, 20pt</span>  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #1E824C; font-family: Arial; font-size: 10pt;">Text, Arial, 10pt</span>  <br>
+&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #446CB3; font-family: Arial; font-size: 20pt;">Text, Arial, 20pt</span>  <br>
 You can find the color coding at [http://www.flatuicolorpicker.com/](http://www.flatuicolorpicker.com/).
 
 #### Checklists (Task Lists):
