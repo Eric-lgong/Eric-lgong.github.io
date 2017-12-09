@@ -146,7 +146,7 @@ Use the following format to create a table:     <br>
 
 It renders to: <br>
 
-| First Header  | Second Header | Second Header | Second Header |
+| First Header  | Second Header |  Third Header | Fourth Header |
 | ------------- | ------------- | ------------- | ------------- |
 | Content Cell  | Content Cell  | Content Cell  | Content Cell  |
 | Content Cell  | Content Cell  | Content Cell  | Content Cell  |
