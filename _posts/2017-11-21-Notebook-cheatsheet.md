@@ -128,15 +128,7 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 `<sub>text</sub>` is the equivalent for subscripts. <br>
 
 #### Table:
-```
-| First Header  | Second Header | Second Header | Second Header |
-| ------------- | ------------- | ------------- | ------------- |
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
-```
-
-Use the following format to create a table:     <br>
+Use the following format to create a table:                           <br>
 | First Header  | Second Header | Second Header | Second Header |     <br>
 | ------------- | ------------- | ------------- | ------------- |     <br>
 | Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
