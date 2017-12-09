@@ -25,6 +25,7 @@ This post is created as a quick reference to assist Markdown users to get a bett
 * Nested List
 * Strikethrough
 * Superscript and Subscript
+* Table
 <br>
 <br>
 <br>
@@ -69,9 +70,9 @@ It renders to:          <br>
 
 #### Code Blocks:
 ```
-&nbsp;&nbsp;&nbsp;&nbsp; `This is inline code.`                                          <br>
-&nbsp;&nbsp;&nbsp;&nbsp; ```This is a fenced code block.```                               <br>
-&nbsp;&nbsp;&nbsp;&nbsp; ⋅⋅⋅⋅This is also a fenced code block.      Dots indicate spaces     <br>
+    `This is inline code.`                                     
+    ```This is a fenced code block.```                            
+    ⋅⋅⋅⋅This is also a fenced code block.      # Dots indicate spaces   
 ```
 
 
@@ -126,7 +127,20 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 <br>
 `<sub>text</sub>` is the equivalent for subscripts. <br>
 
-
+#### Table:
+```
+| First Header  | Second Header | Second Header | Second Header |
+| ------------- | ------------- | ------------- | ------------- |
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
+```
+It renders to: <br>
+| First Header  | Second Header | Second Header | Second Header |
+| ------------- | ------------- | ------------- | ------------- |
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
 
 
 
