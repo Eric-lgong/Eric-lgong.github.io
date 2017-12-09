@@ -147,8 +147,11 @@ It renders to: <br>
 
 
 
+<br>
+<br>
+<br>
 #### Reference:    <br>
-[https://beegit.com/markdown-cheat-sheet](https://beegit.com/markdown-cheat-sheet) <br>
-[http://nestacms.com/docs/creating-content/markdown-cheat-sheet](http://nestacms.com/docs/creating-content/markdown-cheat-sheet) <br>
-[https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) <br>
-[https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed](https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed) <br>
+&nbsp;&nbsp;&nbsp;&nbsp; [https://beegit.com/markdown-cheat-sheet](https://beegit.com/markdown-cheat-sheet) <br>
+&nbsp;&nbsp;&nbsp;&nbsp; [http://nestacms.com/docs/creating-content/markdown-cheat-sheet](http://nestacms.com/docs/creating-content/markdown-cheat-sheet) <br>
+&nbsp;&nbsp;&nbsp;&nbsp; [https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) <br>
+&nbsp;&nbsp;&nbsp;&nbsp; [https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed](https://medium.com/ibm-data-science-experience/markdown-for-jupyter-notebooks-cheatsheet-386c05aeebed) <br>
