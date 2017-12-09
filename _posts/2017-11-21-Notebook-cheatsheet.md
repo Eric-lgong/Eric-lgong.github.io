@@ -136,12 +136,12 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 | Content Cell  | Content Cell  | Content Cell  | Content Cell  |
 ```
 
-Use the following format to create a table:
-| First Header  | Second Header | Second Header | Second Header |
-| ------------- | ------------- | ------------- | ------------- |
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |
+Use the following format to create a table:     <br>
+| First Header  | Second Header | Second Header | Second Header |     <br>
+| ------------- | ------------- | ------------- | ------------- |     <br>
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
+| Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
 
 
 It renders to: <br>
