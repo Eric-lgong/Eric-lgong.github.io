@@ -63,6 +63,7 @@ Use the following code to change font type and size in markdown:          <br>
 It renders to:          <br>
 &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #1E824C; font-family: Arial; font-size: 10pt;">change-font-type-and-size, Arial, 10pt</span>  <br>
 &nbsp;&nbsp;&nbsp;&nbsp; <span style="color: #e40040; font-family: Arial; font-size: 20pt;">change-font-type-and-size, Arial, 20pt</span>  <br>
+You can find the color coding at [http://www.flatuicolorpicker.com/](http://www.flatuicolorpicker.com/).
 
 #### Checklists (Task Lists):
 &nbsp;&nbsp;&nbsp;&nbsp; `[⋅] Unchecked Item`      Dots indicate spaces    <br>
@@ -70,9 +71,9 @@ It renders to:          <br>
 
 #### Code Blocks:
 ```
-    `This is inline code.`                                     
-    ```This is a fenced code block.```                            
-    ⋅⋅⋅⋅This is also a fenced code block.      # Dots indicate spaces   
+  `This is inline code.`                                     
+  ```This is a fenced code block.```                            
+  ⋅⋅⋅⋅This is also a fenced code block.      # Dots indicate spaces   
 ```
 
 
@@ -129,11 +130,11 @@ Use the `<sup>text</sup>` for superscripts. For example, if you type `O(n<sup>2<
 
 #### Table:
 Use the following format to create a table:                           <br>
-| First Header  | Second Header | Second Header | Second Header |     <br>
-| ------------- | ------------- | ------------- | ------------- |     <br>
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
-| Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
+&nbsp;&nbsp;&nbsp;&nbsp; | First Header  | Second Header | Second Header | Second Header |     <br>
+&nbsp;&nbsp;&nbsp;&nbsp; | ------------- | ------------- | ------------- | ------------- |     <br>
+&nbsp;&nbsp;&nbsp;&nbsp; | Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
+&nbsp;&nbsp;&nbsp;&nbsp; | Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
+&nbsp;&nbsp;&nbsp;&nbsp; | Content Cell  | Content Cell  | Content Cell  | Content Cell  |     <br>
 
 
 It renders to: <br>
